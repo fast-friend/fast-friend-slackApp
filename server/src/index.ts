@@ -66,14 +66,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/v1", v1Routes);
 
-if (env.NODE_ENV === "production") {
-  const buildPath = path.join(__dirname, "..", "..", "client", "dist");
-  app.use(express.static(buildPath));
+// if (env.NODE_ENV === "production") {
+//   const buildPath = path.join(__dirname, "..", "..", "client", "dist");
+//   app.use(express.static(buildPath));
 
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(buildPath, "index.html"));
-  });
-}
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.resolve(buildPath, "index.html"));
+//   });
+// }
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

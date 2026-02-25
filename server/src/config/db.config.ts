@@ -3,16 +3,15 @@ import { env } from "./env.config";
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(env.MONGO_URI);
+    // serverSelectionTimeoutMS is crucial for Cloud Run
+    const conn = await mongoose.connect(env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, 
+    });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    return conn; // Return connection for safety
   } catch (error) {
-    if (error instanceof Error) {
-      console.error(`Error: ${error.message}`);
-    } else {
-      console.error(`Unexpected error: ${error}`);
-    }
-
-    process.exit(1);
+    console.error(`Error: ${error instanceof Error ? error.message : error}`);
+    process.exit(1); 
   }
 };
 

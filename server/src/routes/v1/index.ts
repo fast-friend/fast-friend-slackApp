@@ -6,6 +6,8 @@ import { verifySlackSignature } from "../../modules/slack-game/middlewares/slack
 import * as slackInteractionController from "../../modules/slack-game/controllers/slackInteraction.controller";
 import workspaceRoutes from "../../modules/slack/routes/workspace.routes";
 import onboardingRoutes from "../../modules/onboarding/routes/onboarding.routes";
+import { verifySchedulerSecret } from "../../modules/slack-game/middlewares/schedulerAuth.middleware";
+import * as schedulerController from "../../modules/slack-game/controllers/scheduler.controller";
 
 const router = Router();
 
@@ -30,5 +32,12 @@ router.post(
 
 // Public onboarding routes (token-based, no JWT required)
 router.use("/onboard", onboardingRoutes);
+
+// External scheduler: trigger daily game (protected by secret key)
+router.post(
+  "/scheduler/run-daily-game",
+  verifySchedulerSecret,
+  schedulerController.triggerDailyGame,
+);
 
 export default router;

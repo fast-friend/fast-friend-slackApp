@@ -70,10 +70,10 @@ const startServer = async () => {
     await connectDB();
 
     server.listen(PORT, () => {
-      console.log(`🚀 Server live in ${env.NODE_ENV} mode on port ${PORT}`);
+      console.log(`Server live in ${env.NODE_ENV} mode on port ${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 };

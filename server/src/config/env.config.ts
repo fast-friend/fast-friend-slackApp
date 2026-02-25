@@ -28,6 +28,9 @@ const envSchema = z.object({
   SLACK_SIGNING_SECRET: z.string().min(1, "SLACK_SIGNING_SECRET is required"),
   GAME_CRON_SCHEDULE: z.string().default("0 9 * * *"), // 9 AM daily
 
+  // Scheduler (optional — needed only for external cron trigger)
+  SCHEDULER_SECRET_KEY: z.string().optional(),
+
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: z.string().min(1, "CLOUDINARY_CLOUD_NAME is required"),
   CLOUDINARY_API_KEY: z.string().min(1, "CLOUDINARY_API_KEY is required"),

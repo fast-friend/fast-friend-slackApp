@@ -426,13 +426,8 @@ export const forgotPassword = asyncHandler(
 
     const user = await AuthUser.findOne({ email });
 
-    // Always return 200 to avoid leaking whether an email exists
     if (!user) {
-      res.status(200).json({
-        success: true,
-        message: "If an account with that email exists, a reset link has been sent.",
-      });
-      return;
+      throw new AppError("No account found with that email address.", 404);
     }
 
     // Generate a cryptographically secure token

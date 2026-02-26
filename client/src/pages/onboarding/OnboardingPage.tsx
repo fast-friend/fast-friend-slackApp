@@ -86,7 +86,7 @@ const OnboardingPage = () => {
   const workspaces = workspacesData?.data?.workspaces || [];
   const hasWorkspaces = workspaces.length > 0;
 
-  const [activeStep] = useState(0); // Step is always 0 (Connect Slack); existing users are auto-redirected
+  const [activeStep, setActiveStep] = useState(0);
   const [departments, setDepartments] = useState<string[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -109,16 +109,11 @@ const OnboardingPage = () => {
     }
   }, [orgsData]);
 
-  // If user already has Slack connected, they don't need the onboarding flow —
-  // auto-complete it and redirect straight to dashboard.
+  // Once Slack is connected, advance to step 2 (Roles & Departments)
   useEffect(() => {
     if (hasWorkspaces) {
-      completeOnboarding()
-        .unwrap()
-        .catch(() => { }) // ignore errors (e.g. already completed race)
-        .finally(() => navigate("/dashboard", { replace: true }));
+      setActiveStep(1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasWorkspaces]);
 
   const handleContinue = async () => {

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import crypto from "crypto";
 import asyncHandler from "../../../utils/asyncHandler";
 import AppError from "../../../utils/appError";
 import AuthUser from "../models/authuser.model";
@@ -16,7 +17,10 @@ import {
   ISignupRequest,
   ISendOtpRequest,
   IVerifyOtpRequest,
+  IForgotPasswordRequest,
+  IResetPasswordRequest,
 } from "../types/auth.types";
+import { sendOtpEmail, sendPasswordResetEmail } from "../../../utils/email.service";
 
 // Temporary OTP storage for dev (in production, use Redis or database)
 // Store: email -> { otp, expiresAt, password, organizationName }
@@ -241,15 +245,15 @@ export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError("User with this email already exists", 409);
   }
 
-  // For dev phase, OTP is always "111111"
-  const otp = "111111";
+  // Generate a secure random 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
   // Store OTP with password and organization name temporarily
   otpStore.set(email, { otp, expiresAt, password, organizationName });
 
-  // TODO: In production, send email via Resend
-  console.log(`OTP for ${email}: ${otp}`);
+  // Send OTP via Resend
+  await sendOtpEmail(email, otp);
 
   res.status(200).json({
     success: true,
@@ -403,6 +407,104 @@ export const completeOnboarding = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Onboarding completed successfully",
+    });
+  },
+);
+
+/**
+ * @desc    Send password reset link to user's email
+ * @route   POST /api/v1/auth/forgot-password
+ * @access  Public
+ */
+export const forgotPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email } = req.body as IForgotPasswordRequest;
+
+    if (!email) {
+      throw new AppError("Email is required", 400);
+    }
+
+    const user = await AuthUser.findOne({ email });
+
+    // Always return 200 to avoid leaking whether an email exists
+    if (!user) {
+      res.status(200).json({
+        success: true,
+        message: "If an account with that email exists, a reset link has been sent.",
+      });
+      return;
+    }
+
+    // Generate a cryptographically secure token
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    // Store the hashed version in the DB (never the raw token)
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await AuthUser.findByIdAndUpdate(user._id, {
+      passwordResetToken: hashedToken,
+      passwordResetExpires: expiresAt,
+    });
+
+    // Build the reset link — rawToken goes in the URL, not the hashed one
+    const { env } = await import("../../../config/env.config");
+    const resetLink = `${env.FRONTEND_URL}/reset-password?token=${rawToken}`;
+
+    await sendPasswordResetEmail(email, resetLink);
+
+    res.status(200).json({
+      success: true,
+      message: "If an account with that email exists, a reset link has been sent.",
+    });
+  },
+);
+
+/**
+ * @desc    Reset password using token from email
+ * @route   POST /api/v1/auth/reset-password
+ * @access  Public
+ */
+export const resetPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { token, newPassword } = req.body as IResetPasswordRequest;
+
+    if (!token || !newPassword) {
+      throw new AppError("Token and new password are required", 400);
+    }
+
+    if (newPassword.length < 8) {
+      throw new AppError("Password must be at least 8 characters", 400);
+    }
+
+    // Hash the incoming token to compare with stored hash
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    // Find user with a matching, non-expired token
+    const user = await AuthUser.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() },
+    }).select("+passwordResetToken +passwordResetExpires +password");
+
+    if (!user) {
+      throw new AppError("Invalid or expired password reset token", 400);
+    }
+
+    // Update password and clear the reset token fields
+    user.password = newPassword;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save(); // triggers the bcrypt pre-save hook
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully. You can now log in with your new password.",
     });
   },
 );

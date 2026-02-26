@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Typography, Link, Stack } from "@mui/material";
+import { Box, Typography, Link, Stack, CircularProgress } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { ArrowBack, KeyOutlined, MailOutlined } from "@mui/icons-material";
 
@@ -10,18 +10,38 @@ import FFInputField from "@/components/ui/FFInputField";
 // Assets
 import backgroundGrids from "../../../assets/Images/Background-pattern-decorative.webp";
 
+// API
+import { useForgotPasswordMutation } from "../api/authApi";
+
 const ForgotPassword = () => {
     const [email, setEmail] = useState("");
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const [forgotPassword, { isLoading }] = useForgotPasswordMutation();
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Simulate API call
-        setIsSubmitted(true);
+        setErrorMessage("");
+
+        try {
+            await forgotPassword({ email }).unwrap();
+            // Always show success (backend returns 200 regardless of email existence)
+            setIsSubmitted(true);
+        } catch (err: unknown) {
+            const error = err as { data?: { message?: string } };
+            setErrorMessage(error?.data?.message || "Something went wrong. Please try again.");
+        }
     };
 
-    const handleResend = () => {
-        console.log("Resend email clicked");
+    const handleResend = async () => {
+        setErrorMessage("");
+        try {
+            await forgotPassword({ email }).unwrap();
+        } catch (err: unknown) {
+            const error = err as { data?: { message?: string } };
+            setErrorMessage(error?.data?.message || "Something went wrong. Please try again.");
+        }
     };
 
     return (
@@ -128,8 +148,19 @@ const ForgotPassword = () => {
                                     autoComplete="email"
                                 />
 
-                                <FFButton type="submit" variant="primary" fullWidth>
-                                    Reset password
+                                {errorMessage && (
+                                    <Typography sx={{ fontSize: "14px", color: "#F04438", textAlign: "center" }}>
+                                        {errorMessage}
+                                    </Typography>
+                                )}
+
+                                <FFButton
+                                    type="submit"
+                                    variant="primary"
+                                    fullWidth
+                                    disabled={isLoading || !email}
+                                >
+                                    {isLoading ? <CircularProgress size={20} color="inherit" /> : "Reset password"}
                                 </FFButton>
                             </Stack>
                         </Box>
@@ -179,6 +210,12 @@ const ForgotPassword = () => {
                                 Open email app
                             </FFButton>
 
+                            {errorMessage && (
+                                <Typography sx={{ fontSize: "14px", color: "#F04438", textAlign: "center" }}>
+                                    {errorMessage}
+                                </Typography>
+                            )}
+
                             <Typography
                                 sx={{
                                     fontSize: "14px",
@@ -189,16 +226,17 @@ const ForgotPassword = () => {
                                 <Link
                                     component="button"
                                     onClick={handleResend}
+                                    disabled={isLoading}
                                     sx={{
                                         fontWeight: 600,
-                                        color: "#6941C6", // Using the purple from the design
+                                        color: "#6941C6",
                                         textDecoration: "none",
                                         "&:hover": {
                                             textDecoration: "underline",
                                         },
                                     }}
                                 >
-                                    Click to resend
+                                    {isLoading ? "Sending..." : "Click to resend"}
                                 </Link>
                             </Typography>
                         </Stack>

@@ -7,6 +7,8 @@ import {
   sendOtp,
   verifyOtp,
   completeOnboarding,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/auth.controller";
 import { protect } from "../middlewares/auth.middleware";
 
@@ -17,6 +19,8 @@ router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
 router.post("/login", login);
 router.post("/refresh", refreshToken);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 // Protected routes
 router.post("/logout", protect(), logout);

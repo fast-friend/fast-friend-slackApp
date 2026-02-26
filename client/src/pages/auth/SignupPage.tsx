@@ -385,9 +385,7 @@ const SignupPage = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             We've sent a verification code to <strong>{email}</strong>
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            For development, use: <strong>111111</strong>
-          </Typography>
+          
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}

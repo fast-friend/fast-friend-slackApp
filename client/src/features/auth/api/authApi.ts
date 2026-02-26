@@ -10,6 +10,9 @@ import type {
   IVerifyOtpRequest,
   IVerifyOtpResponse,
   ICompleteOnboardingResponse,
+  IForgotPasswordRequest,
+  IResetPasswordRequest,
+  ISimpleSuccessResponse,
 } from "../types/auth.types";
 
 export const authApi = baseApi.injectEndpoints({
@@ -83,6 +86,24 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Auth"],
     }),
+
+    // Forgot Password
+    forgotPassword: builder.mutation<ISimpleSuccessResponse, IForgotPasswordRequest>({
+      query: (data) => ({
+        url: "/auth/forgot-password",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    // Reset Password
+    resetPassword: builder.mutation<ISimpleSuccessResponse, IResetPasswordRequest>({
+      query: (data) => ({
+        url: "/auth/reset-password",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -95,4 +116,6 @@ export const {
   useSendOtpMutation,
   useVerifyOtpMutation,
   useCompleteOnboardingMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
 } = authApi;

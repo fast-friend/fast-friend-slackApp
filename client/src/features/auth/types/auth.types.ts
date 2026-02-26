@@ -22,10 +22,10 @@ export interface ISignupRequest {
 }
 
 // Refresh Token Request
-export interface IRefreshTokenRequest {}
+export interface IRefreshTokenRequest { }
 
 // Logout Request
-export interface ILogoutRequest {}
+export interface ILogoutRequest { }
 
 // Auth Response
 export interface IAuthResponse {
@@ -95,3 +95,21 @@ export interface ICompleteOnboardingResponse {
   success: boolean;
   message: string;
 }
+
+// Forgot Password Request
+export interface IForgotPasswordRequest {
+  email: string;
+}
+
+// Reset Password Request
+export interface IResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+// Generic success response (used for forgot/reset password)
+export interface ISimpleSuccessResponse {
+  success: boolean;
+  message: string;
+}
+

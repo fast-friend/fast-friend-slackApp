@@ -10,6 +10,8 @@ export interface IAuthUser {
   isActive: boolean;
   emailVerified: boolean;
   onboardingCompleted: boolean;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -106,4 +108,13 @@ export interface IVerifyOtpResponse {
 export interface ICompleteOnboardingResponse {
   success: boolean;
   message: string;
+}
+
+export interface IForgotPasswordRequest {
+  email: string;
+}
+
+export interface IResetPasswordRequest {
+  token: string;
+  newPassword: string;
 }

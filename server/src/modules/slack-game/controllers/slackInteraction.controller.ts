@@ -5,6 +5,8 @@ import AppError from "../../../utils/appError";
 import GameMessage from "../models/GameMessage.model";
 import GameResponse from "../models/GameResponse.model";
 import { calculatePoints, getOptionText } from "../services/scoring.service";
+import SlackWorkspace from "../../slack/models/slackWorkspace.model";
+import { getWorkspaceLeaderboard, getUserXP } from "../services/leaderboard.service";
 
 interface SlackInteractionPayload {
     type: string;
@@ -25,6 +27,7 @@ interface SlackInteractionPayload {
         };
     };
     response_url: string; // URL to send follow-up messages
+    trigger_id?: string; // Used to open modals
 }
 
 /**
@@ -44,6 +47,18 @@ export const handleInteraction = asyncHandler(
         const selectedName = payload.actions[0]?.value || "Unknown"; // The name they clicked
         const gameMessageId = payload.message.metadata?.event_payload.gameMessageId;
         const responseUrl = payload.response_url;
+        const triggerId = payload.trigger_id;
+
+        // --- APPHOME INTERACTION INTERCEPT ---
+        if (actionIdRaw === "view_leaderboard" || actionIdRaw === "check_xp") {
+            // Acknowledge the interaction immediately
+            res.status(200).send();
+
+            // Fire off the modal creation asynchronously
+            handleAppHomeInteractions(actionIdRaw, responderSlackUserId, triggerId)
+                .catch(err => console.error("Error opening App Home modal:", err.message));
+            return;
+        }
 
         if (!gameMessageId) {
             // This is a non-game interaction (e.g. onboarding DM button click).
@@ -112,3 +127,133 @@ export const handleInteraction = asyncHandler(
         });
     }
 );
+
+/**
+ * Handle App Home interactions for Leaderboard and XP Modals
+ */
+const handleAppHomeInteractions = async (actionId: string, slackUserId: string, triggerId?: string) => {
+    if (!triggerId) return;
+
+    // Find the workspace this user belongs to (simplified for standard setups)
+    const SlackUser = (await import("../../groups/models/SlackUser.model")).default;
+    const userDoc = await SlackUser.findOne({ userId: slackUserId });
+
+    if (!userDoc) {
+        console.error("User not found in database for App Home interaction.");
+        return;
+    }
+
+    const workspace = await SlackWorkspace.findById(userDoc.workspaceId);
+    if (!workspace || !workspace.botToken) {
+        console.error("Workspace or botToken not found for App Home interaction.");
+        return;
+    }
+
+    const workspaceStr = workspace._id.toString();
+    const token = workspace.botToken;
+
+    let viewPayload: any;
+
+    if (actionId === "view_leaderboard") {
+        const { leaderboard } = await getWorkspaceLeaderboard(workspaceStr, slackUserId);
+
+        let leaderboardBlocks: any[] = [
+            {
+                type: "header",
+                text: {
+                    type: "plain_text",
+                    text: "🏆 Workspace Leaderboard",
+                    emoji: true
+                }
+            },
+            {
+                type: "divider"
+            }
+        ];
+
+        if (leaderboard.length === 0) {
+            leaderboardBlocks.push({
+                type: "section",
+                text: {
+                    type: "mrkdwn",
+                    text: "No games have been played yet. Be the first to earn points!"
+                }
+            });
+        } else {
+            leaderboard.forEach(user => {
+                const isMe = user.isCurrentUser;
+                leaderboardBlocks.push({
+                    type: "section",
+                    text: {
+                        type: "mrkdwn",
+                        text: `${isMe ? "*" : ""}${user.rank}. ${user.name} - ${user.points} XP${isMe ? "*" : ""}`
+                    }
+                });
+            });
+        }
+
+        viewPayload = {
+            type: "modal",
+            title: {
+                type: "plain_text",
+                text: "Leaderboard"
+            },
+            close: {
+                type: "plain_text",
+                text: "Close"
+            },
+            blocks: leaderboardBlocks
+        };
+    } else if (actionId === "check_xp") {
+        const xp = await getUserXP(workspaceStr, slackUserId);
+
+        viewPayload = {
+            type: "modal",
+            title: {
+                type: "plain_text",
+                text: "My XP"
+            },
+            close: {
+                type: "plain_text",
+                text: "Close"
+            },
+            blocks: [
+                {
+                    type: "header",
+                    text: {
+                        type: "plain_text",
+                        text: "⭐ Your Current Experience",
+                        emoji: true
+                    }
+                },
+                {
+                    type: "section",
+                    text: {
+                        type: "mrkdwn",
+                        text: `You currently have *${xp} XP*!\n\nKeep answering correctly to earn more points and climb the leaderboard.`
+                    }
+                }
+            ]
+        };
+    }
+
+    if (viewPayload) {
+        try {
+            await axios.post(
+                "https://slack.com/api/views.open",
+                {
+                    trigger_id: triggerId,
+                    view: viewPayload
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+        } catch (error: any) {
+            console.error("Failed to open modal:", error.response?.data || error.message);
+        }
+    }
+};

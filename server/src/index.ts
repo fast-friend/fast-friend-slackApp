@@ -45,10 +45,14 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(cookieParser());
 
-// Preserve raw body for Slack signature verification
+// Fully intercept and preserve RAW body for all Slack routes (Events and Interactions)
+app.use(
+  "/api/v1/slack/events",
+  express.raw({ type: "application/json" })
+);
 app.use(
   "/api/v1/slack-game/interactions",
-  express.raw({ type: "application/x-www-form-urlencoded" }),
+  express.raw({ type: "application/x-www-form-urlencoded" })
 );
 
 app.use(express.json());

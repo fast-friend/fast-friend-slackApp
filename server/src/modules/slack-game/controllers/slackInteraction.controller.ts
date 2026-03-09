@@ -28,6 +28,10 @@ interface SlackInteractionPayload {
     };
     response_url: string; // URL to send follow-up messages
     trigger_id?: string; // Used to open modals
+    team?: {
+        id: string;
+        domain: string;
+    };
 }
 
 /**
@@ -45,7 +49,7 @@ export const handleInteraction = asyncHandler(
         const actionIdRaw = payload.actions[0]?.action_id; // "correct_0" or "incorrect_1"
         const actionId = actionIdRaw?.startsWith("correct") ? "correct" : "incorrect";
         const selectedName = payload.actions[0]?.value || "Unknown"; // The name they clicked
-        const gameMessageId = payload.message.metadata?.event_payload.gameMessageId;
+        const gameMessageId = payload.message?.metadata?.event_payload?.gameMessageId;
         const responseUrl = payload.response_url;
         const triggerId = payload.trigger_id;
 
@@ -54,8 +58,10 @@ export const handleInteraction = asyncHandler(
             // Acknowledge the interaction immediately
             res.status(200).send();
 
+            const teamId = payload.team?.id;
+
             // Fire off the modal creation asynchronously
-            handleAppHomeInteractions(actionIdRaw, responderSlackUserId, triggerId)
+            handleAppHomeInteractions(actionIdRaw, responderSlackUserId, teamId, triggerId)
                 .catch(err => console.error("Error opening App Home modal:", err.message));
             return;
         }
@@ -131,19 +137,17 @@ export const handleInteraction = asyncHandler(
 /**
  * Handle App Home interactions for Leaderboard and XP Modals
  */
-const handleAppHomeInteractions = async (actionId: string, slackUserId: string, triggerId?: string) => {
+const handleAppHomeInteractions = async (actionId: string, slackUserId: string, teamId: string | undefined, triggerId?: string) => {
     if (!triggerId) return;
 
-    // Find the workspace this user belongs to (simplified for standard setups)
-    const SlackUser = (await import("../../groups/models/SlackUser.model")).default;
-    const userDoc = await SlackUser.findOne({ userId: slackUserId });
-
-    if (!userDoc) {
-        console.error("User not found in database for App Home interaction.");
+    if (!teamId) {
+        console.error("Team ID was not provided in the interaction payload.");
         return;
     }
 
-    const workspace = await SlackWorkspace.findById(userDoc.workspaceId);
+    // Fetch the explicit workspace this action originated from
+    const workspace = await SlackWorkspace.findOne({ teamId });
+
     if (!workspace || !workspace.botToken) {
         console.error("Workspace or botToken not found for App Home interaction.");
         return;

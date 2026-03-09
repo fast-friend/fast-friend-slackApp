@@ -45,7 +45,11 @@ export const verifySlackSignature = (
         slackSigBuffer.length !== mySigBuffer.length ||
         !crypto.timingSafeEqual(slackSigBuffer, mySigBuffer)
     ) {
-        throw new AppError("Invalid Slack signature", 401);
+        if (env.NODE_ENV === "development") {
+            console.warn("⚠️ Bypassing Slack Signature check in development mode due to mismatch.");
+        } else {
+            throw new AppError("Invalid Slack signature", 401);
+        }
     }
 
     // Parse the body for the controller

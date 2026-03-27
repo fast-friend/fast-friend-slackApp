@@ -10,6 +10,11 @@ import { getWorkspaceLeaderboard, getUserXP } from "../services/leaderboard.serv
 import { buildGameMessage } from "../services/slackBlockBuilder";
 import { selectDailyPairs } from "../services/userSelection.service";
 import { generateNameOptions } from "../services/nameGenerator.service";
+import {
+    getPracticeQuestion,
+    startPracticeSession,
+    endPracticeSession,
+} from "../services/practice.service";
 import { SlackUser } from "../types/slack.types";
 
 interface SlackCommandPayload {
@@ -33,6 +38,9 @@ interface ISlackUsersListResponse {
     members: SlackUser[];
 }
 
+const getFieldValue = (value: string | string[] | undefined): string | undefined =>
+    Array.isArray(value) ? value[0] : value;
+
 /**
  * @desc    Handle Slack Slash Commands
  * @route   POST /api/v1/slack-game/commands
@@ -40,19 +48,21 @@ interface ISlackUsersListResponse {
  */
 export const handleCommand = asyncHandler(
     async (req: Request, res: Response) => {
-        // Slack sends commands as urlencoded form data; body parser makes it an object if configured,
-        // but since we preserve raw body for signature, we might need to parse it ourselves if it's a Buffer
-        let payload: Partial<SlackCommandPayload> = {};
-        
-        if (Buffer.isBuffer(req.body)) {
-            const bodyString = req.body.toString("utf8");
-            const searchParams = new URLSearchParams(bodyString);
-            for (const [key, value] of searchParams.entries()) {
-                (payload as any)[key] = value;
-            }
-        } else {
-            payload = req.body;
-        }
+        const payload = {
+            token: getFieldValue(req.body.token),
+            team_id: getFieldValue(req.body.team_id),
+            team_domain: getFieldValue(req.body.team_domain),
+            channel_id: getFieldValue(req.body.channel_id),
+            channel_name: getFieldValue(req.body.channel_name),
+            user_id: getFieldValue(req.body.user_id),
+            user_name: getFieldValue(req.body.user_name),
+            command: getFieldValue(req.body.command),
+            text: getFieldValue(req.body.text),
+            api_app_id: getFieldValue(req.body.api_app_id),
+            is_enterprise_install: getFieldValue(req.body.is_enterprise_install),
+            response_url: getFieldValue(req.body.response_url),
+            trigger_id: getFieldValue(req.body.trigger_id),
+        } satisfies Partial<SlackCommandPayload>;
 
         const commandRaw = payload.command?.toLowerCase().trim();
         // Allow for custom command names setup in Slack: e.g. /fast-help, /fast-leaderboard. We just check the suffix.
@@ -97,6 +107,14 @@ export const handleCommand = asyncHandler(
                 case "start":
                     await handleStartCommand(responseUrl, workspace, slackUserId);
                     break;
+                case "/startpractice":
+                case "startpractice":
+                    await handleStartPracticeCommand(responseUrl, workspaceStr, slackUserId);
+                    break;
+                case "/endpractice":
+                case "endpractice":
+                    await handleEndPracticeCommand(responseUrl, workspaceStr, slackUserId);
+                    break;
                 default:
                     await sendEphemeralReply(responseUrl, "❓ Unknown command. Type `/help` to see available commands.");
                     break;
@@ -124,7 +142,7 @@ const handleHelpCommand = async (responseUrl: string) => {
             type: "section",
             text: {
                 type: "mrkdwn",
-                text: "*`/start`* - Brings up today's scheduled game if you have one pending.\n*`/leaderboard`* - Shows the top players in your workspace and your rank.\n*`/checkxp`* - Shows your current experience points (XP)."
+                text: "*`/start`* - Brings up today's scheduled game if you have one pending.\n*`/leaderboard`* - Shows the top players in your workspace and your rank.\n*`/checkxp`* - Shows your current experience points (XP).\n*`/startpractice`* - Replays your previously answered questions in practice mode.\n*`/endpractice`* - Ends your active practice session."
             }
         }
     ];
@@ -334,6 +352,52 @@ const handleStartCommand = async (responseUrl: string, workspace: any, slackUser
         response_type: "ephemeral",
         ...messagePayload
     });
+};
+
+const handleStartPracticeCommand = async (
+    responseUrl: string,
+    workspaceId: string,
+    slackUserId: string,
+) => {
+    const session = await startPracticeSession(workspaceId, slackUserId);
+
+    if (!session) {
+        await sendEphemeralReply(
+            responseUrl,
+            "📭 No previously answered questions were found for practice mode.",
+        );
+        return;
+    }
+
+    const practiceQuestion = await getPracticeQuestion(session);
+
+    if (!practiceQuestion) {
+        await sendEphemeralReply(
+            responseUrl,
+            "📭 No valid practice questions are available right now.",
+        );
+        return;
+    }
+
+    await axios.post(responseUrl, {
+        response_type: "ephemeral",
+        ...practiceQuestion.messagePayload,
+    });
+};
+
+const handleEndPracticeCommand = async (
+    responseUrl: string,
+    workspaceId: string,
+    slackUserId: string,
+) => {
+    const didEndSession = await endPracticeSession(workspaceId, slackUserId);
+
+    await sendEphemeralReply(
+        responseUrl,
+        didEndSession
+            ? "🛑 Practice mode ended."
+            : "ℹ️ You do not have an active practice session.",
+    );
 };
 
 const sendEphemeralReply = async (responseUrl: string, text: string) => {

@@ -7,6 +7,12 @@ import GameResponse from "../models/GameResponse.model";
 import { calculatePoints, getOptionText } from "../services/scoring.service";
 import SlackWorkspace from "../../slack/models/slackWorkspace.model";
 import { getWorkspaceLeaderboard, getUserXP } from "../services/leaderboard.service";
+import {
+    advancePracticeSession,
+    endPracticeSession,
+    getActivePracticeSession,
+    getPracticeQuestion,
+} from "../services/practice.service";
 
 interface SlackInteractionPayload {
     type: string;
@@ -21,9 +27,7 @@ interface SlackInteractionPayload {
     message: {
         metadata?: {
             event_type: string;
-            event_payload: {
-                gameMessageId: string;
-            };
+            event_payload: Record<string, string>;
         };
     };
     response_url: string; // URL to send follow-up messages
@@ -34,6 +38,9 @@ interface SlackInteractionPayload {
     };
 }
 
+const getFieldValue = (value: string | string[] | undefined): string | undefined =>
+    Array.isArray(value) ? value[0] : value;
+
 /**
  * @desc    Handle Slack button interactions
  * @route   POST /api/v1/slack-game/interactions
@@ -42,14 +49,21 @@ interface SlackInteractionPayload {
 export const handleInteraction = asyncHandler(
     async (req: Request, res: Response) => {
         // Parse payload (Slack sends it as URL-encoded form data)
-        const payload: SlackInteractionPayload = JSON.parse(req.body.payload);
+        const rawPayload = getFieldValue(req.body.payload);
+
+        if (!rawPayload) {
+            throw new AppError("Missing interaction payload", 400);
+        }
+
+        const payload: SlackInteractionPayload = JSON.parse(rawPayload);
 
         // Extract data
         const responderSlackUserId = payload.user.id;
         const actionIdRaw = payload.actions[0]?.action_id; // "correct_0" or "incorrect_1"
         const actionId = actionIdRaw?.startsWith("correct") ? "correct" : "incorrect";
         const selectedName = payload.actions[0]?.value || "Unknown"; // The name they clicked
-        const gameMessageId = payload.message?.metadata?.event_payload?.gameMessageId;
+        const metadata = payload.message?.metadata;
+        const gameMessageId = metadata?.event_payload?.gameMessageId;
         const responseUrl = payload.response_url;
         const triggerId = payload.trigger_id;
 
@@ -63,6 +77,21 @@ export const handleInteraction = asyncHandler(
             // Fire off the modal creation asynchronously
             handleAppHomeInteractions(actionIdRaw, responderSlackUserId, teamId, triggerId)
                 .catch(err => console.error("Error opening App Home modal:", err.message));
+            return;
+        }
+
+        if (metadata?.event_type === "practice_response") {
+            res.status(200).send();
+
+            handlePracticeInteraction(
+                responderSlackUserId,
+                actionId,
+                selectedName,
+                metadata.event_payload,
+                responseUrl,
+            ).catch((error: any) => {
+                console.error("Error handling practice interaction:", error.message);
+            });
             return;
         }
 
@@ -133,6 +162,110 @@ export const handleInteraction = asyncHandler(
         });
     }
 );
+
+const handlePracticeInteraction = async (
+    responderSlackUserId: string,
+    actionId: string | undefined,
+    selectedName: string,
+    eventPayload: Record<string, string>,
+    responseUrl: string,
+) => {
+    if (!actionId) {
+        await sendEphemeralInteractionReply(
+            responseUrl,
+            "⚠️ Invalid practice response. Please run `/startpractice` again.",
+        );
+        return;
+    }
+
+    const practiceSessionId = eventPayload.practiceSessionId;
+    const questionIndex = Number(eventPayload.questionIndex);
+    const sourceGameMessageId = eventPayload.sourceGameMessageId;
+
+    if (
+        !practiceSessionId ||
+        !sourceGameMessageId ||
+        Number.isNaN(questionIndex)
+    ) {
+        await sendEphemeralInteractionReply(
+            responseUrl,
+            "⚠️ Practice session data is missing. Please run `/startpractice` again.",
+        );
+        return;
+    }
+
+    const sourceMessage = await GameMessage.findById(sourceGameMessageId).lean();
+    if (!sourceMessage) {
+        await sendEphemeralInteractionReply(
+            responseUrl,
+            "⚠️ This practice question is no longer available. Please run `/startpractice` again.",
+        );
+        return;
+    }
+
+    const workspaceId = sourceMessage.workspaceId.toString();
+    const activeSession = await getActivePracticeSession(workspaceId, responderSlackUserId);
+
+    if (!activeSession || activeSession._id.toString() !== practiceSessionId) {
+        await sendEphemeralInteractionReply(
+            responseUrl,
+            "ℹ️ Your practice session has ended. Run `/startpractice` to begin again.",
+        );
+        return;
+    }
+
+    const advancedSession = await advancePracticeSession(
+        practiceSessionId,
+        workspaceId,
+        responderSlackUserId,
+        questionIndex,
+    );
+
+    if (!advancedSession) {
+        await sendEphemeralInteractionReply(
+            responseUrl,
+            "ℹ️ That practice question was already handled. Use `/startpractice` to restart if needed.",
+        );
+        return;
+    }
+
+    const responseMessage =
+        actionId === "correct"
+            ? `✅ *Correct!* Practice mode does not award XP.\n\nYou selected: *${selectedName}*`
+            : `❌ *Incorrect.* Practice mode does not award XP.\n\nYou selected: *${selectedName}*`;
+
+    await sendEphemeralInteractionReply(responseUrl, responseMessage);
+
+    const nextPracticeQuestion = await getPracticeQuestion(advancedSession);
+
+    if (!nextPracticeQuestion) {
+        await endPracticeSession(workspaceId, responderSlackUserId);
+        await sendEphemeralInteractionReply(
+            responseUrl,
+            "🎉 Practice complete. You have reached the end of your answered questions.",
+        );
+        return;
+    }
+
+    await axios.post(responseUrl, {
+        response_type: "ephemeral",
+        replace_original: false,
+        ...nextPracticeQuestion.messagePayload,
+    });
+};
+
+const sendEphemeralInteractionReply = async (
+    responseUrl: string,
+    text: string,
+) => {
+    await axios.post(responseUrl, {
+        response_type: "ephemeral",
+        replace_original: false,
+        text,
+    }).catch((error) => {
+        console.error("Error sending interaction reply:", error.message);
+    });
+};
 
 /**
  * Handle App Home interactions for Leaderboard and XP Modals

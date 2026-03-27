@@ -3,6 +3,31 @@ import crypto from "crypto";
 import { env } from "../../../config/env.config";
 import AppError from "../../../utils/appError";
 
+type ParsedSlackFormBody = Record<string, string | string[]>;
+
+const parseSlackFormBody = (rawBody: string): ParsedSlackFormBody => {
+    const searchParams = new URLSearchParams(rawBody);
+    const parsedBody: ParsedSlackFormBody = {};
+
+    for (const [key, value] of searchParams.entries()) {
+        const existingValue = parsedBody[key];
+
+        if (existingValue === undefined) {
+            parsedBody[key] = value;
+            continue;
+        }
+
+        if (Array.isArray(existingValue)) {
+            existingValue.push(value);
+            continue;
+        }
+
+        parsedBody[key] = [existingValue, value];
+    }
+
+    return parsedBody;
+};
+
 /**
  * Middleware to verify Slack request signature
  * Prevents unauthorized requests and replay attacks
@@ -26,7 +51,11 @@ export const verifySlackSignature = (
     }
 
     // Get raw body (preserved by express.raw middleware)
-    const rawBody = req.body.toString("utf8");
+    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : "";
+
+    if (!rawBody) {
+        throw new AppError("Missing Slack request body", 400);
+    }
 
     // Compute signature
     const sigBasestring = `v0:${timestamp}:${rawBody}`;
@@ -52,11 +81,10 @@ export const verifySlackSignature = (
         }
     }
 
-    // Parse the body for the controller
-    const parsedBody = new URLSearchParams(rawBody);
-    (req as any).body = {
-        payload: parsedBody.get("payload") || "",
-    };
+    // Slack sends slash commands as top-level form fields and interactive
+    // actions as a single `payload` form field. Preserve the full parsed form
+    // body so downstream handlers can read the format they expect.
+    req.body = parseSlackFormBody(rawBody);
 
     next();
 };

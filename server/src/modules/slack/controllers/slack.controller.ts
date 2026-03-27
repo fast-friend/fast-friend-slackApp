@@ -348,6 +348,7 @@ export const getWorkspaceUsers = asyncHandler(
           ...stats,
           role: (dbUser?.roles && dbUser.roles.length > 0) ? dbUser.roles[0] : (dbUser?.jobTitle || "Member"),
           photoUrl: dbUser?.photoUrl || undefined,
+          onboardingCompleted: dbUser?.onboardingCompleted || false,
         };
       }),
     );
@@ -380,6 +381,7 @@ export const getWorkspaceUsers = asyncHandler(
           role: (dbUser.roles && dbUser.roles.length > 0) ? dbUser.roles[0] : (dbUser.jobTitle || "Member"),
           photoUrl: dbUser.photoUrl || undefined,
           csvImported: true,
+          onboardingCompleted: dbUser.onboardingCompleted || false,
         };
       }),
     );

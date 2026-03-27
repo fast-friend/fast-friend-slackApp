@@ -72,6 +72,9 @@ export const GamesPage = () => {
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [frequencyHours, setFrequencyHours] = useState<number | "">("");
   const [frequencyMinutes, setFrequencyMinutes] = useState<number | "">("");
+  const [endCondition, setEndCondition] = useState<"never" | "plays" | "date">("never");
+  const [endPlays, setEndPlays] = useState<number | "">("");
+  const [endDate, setEndDate] = useState<string>("");
 
   // Fetch groups (teams) and templates
   const { data: groups = [], isLoading: loadingGroups } = useGetGroupsQuery(
@@ -110,6 +113,16 @@ export const GamesPage = () => {
       setFrequencyMinutes("");
     }
 
+    if (game.endDate) {
+      setEndCondition("date");
+      setEndDate(game.endDate.split("T")[0]);
+    } else if (game.maxPlays) {
+      setEndCondition("plays");
+      setEndPlays(game.maxPlays);
+    } else {
+      setEndCondition("never");
+    }
+
     setCreateDialogOpen(true);
   };
 
@@ -122,9 +135,11 @@ export const GamesPage = () => {
     ) {
       return;
     }
+    if (endCondition === "date" && !endDate) return;
+    if (endCondition === "plays" && (!endPlays || Number(endPlays) < 1)) return;
 
     try {
-      const payload = {
+      const payload: any = {
         gameName: gameName.trim(),
         gameTemplateId: selectedTemplateId,
         scheduleType,
@@ -133,8 +148,19 @@ export const GamesPage = () => {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         ...((frequencyHours || frequencyMinutes)
           ? { frequencyMinutes: (Number(frequencyHours || 0) * 60) + Number(frequencyMinutes || 0) }
-          : { frequencyMinutes: null as any }),
+          : { frequencyMinutes: null }),
       };
+
+      if (endCondition === "date") {
+        payload.endDate = new Date(endDate).toISOString();
+        payload.maxPlays = null;
+      } else if (endCondition === "plays") {
+        payload.maxPlays = Number(endPlays);
+        payload.endDate = null;
+      } else {
+        payload.endDate = null;
+        payload.maxPlays = null;
+      }
 
       if (editGameId && editGroupId) {
         // Edit flow
@@ -168,6 +194,9 @@ export const GamesPage = () => {
       setScheduledTime("09:00");
       setFrequencyHours("");
       setFrequencyMinutes("");
+      setEndCondition("never");
+      setEndPlays("");
+      setEndDate("");
     } catch (error) {
       console.error("Failed to save game:", error);
     }
@@ -526,6 +555,47 @@ export const GamesPage = () => {
                 />
               </Box>
             </Box>
+
+            <FormControl fullWidth>
+              <Typography variant="subtitle2" gutterBottom>End Condition (Optional)</Typography>
+              <ToggleButtonGroup
+                value={endCondition}
+                exclusive
+                onChange={(_, value) => {
+                  if (value) setEndCondition(value);
+                }}
+                fullWidth
+                sx={{ mb: 2 }}
+              >
+                <ToggleButton value="never">Never</ToggleButton>
+                <ToggleButton value="plays">After X Plays</ToggleButton>
+                <ToggleButton value="date">On Specific Date</ToggleButton>
+              </ToggleButtonGroup>
+
+              {endCondition === "plays" && (
+                <TextField
+                  label="Number of Plays"
+                  type="number"
+                  fullWidth
+                  value={endPlays}
+                  onChange={(e) => setEndPlays(e.target.value ? Number(e.target.value) : "")}
+                  inputProps={{ min: 1 }}
+                  required
+                />
+              )}
+
+              {endCondition === "date" && (
+                <TextField
+                  label="End Date"
+                  type="date"
+                  fullWidth
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  required
+                />
+              )}
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -541,6 +611,9 @@ export const GamesPage = () => {
             setScheduledTime("09:00");
             setFrequencyHours("");
             setFrequencyMinutes("");
+            setEndCondition("never");
+            setEndPlays("");
+            setEndDate("");
           }}>
             Cancel
           </Button>
@@ -553,7 +626,9 @@ export const GamesPage = () => {
               !gameName.trim() ||
               !selectedTemplateId ||
               selectedGroupIds.length === 0 ||
-              selectedDays.length === 0
+              selectedDays.length === 0 ||
+              (endCondition === "date" && !endDate) ||
+              (endCondition === "plays" && (!endPlays || Number(endPlays) < 1))
             }
           >
             {creating || updating ? "Saving..." : editGameId ? "Save Changes" : "Create Game"}

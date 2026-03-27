@@ -10,6 +10,8 @@ export interface IGame {
   scheduledTime: string; // HH:mm format (e.g., "09:00")
   timezone?: string; // Optional timezone
   frequencyMinutes?: number; // Optional frequency in total minutes (e.g. 90 for 1h 30m)
+  endDate?: Date; // Optional date when the game should stop repeating
+  maxPlays?: number; // Optional maximum number of times the game should run
   status: "scheduled" | "active" | "completed" | "cancelled";
   createdBy: string;
   isActive: boolean;
@@ -72,6 +74,13 @@ const GameSchema = new Schema<IGameDocument>(
     frequencyMinutes: {
       type: Number,
       min: [1, "Frequency must be at least 1 minute"],
+    },
+    endDate: {
+      type: Date,
+    },
+    maxPlays: {
+      type: Number,
+      min: [1, "Max plays must be at least 1"],
     },
     status: {
       type: String,

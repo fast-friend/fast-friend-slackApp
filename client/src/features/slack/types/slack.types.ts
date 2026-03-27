@@ -32,6 +32,7 @@ export interface ISlackUser {
   role?: string;
   department?: string;
   photoUrl?: string;
+  onboardingCompleted?: boolean;
 }
 
 export interface IGetWorkspacesResponse {

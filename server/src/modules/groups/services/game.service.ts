@@ -10,6 +10,8 @@ interface CreateGameData {
   scheduledTime: string;
   timezone?: string;
   frequencyMinutes?: number;
+  endDate?: Date;
+  maxPlays?: number;
   createdBy: string;
 }
 
@@ -20,6 +22,8 @@ interface UpdateGameData {
   scheduledTime?: string;
   timezone?: string;
   frequencyMinutes?: number;
+  endDate?: Date;
+  maxPlays?: number;
   status?: "scheduled" | "active" | "completed" | "cancelled";
 }
 
@@ -39,6 +43,8 @@ export const createGame = async (data: CreateGameData) => {
     scheduledTime,
     timezone,
     frequencyMinutes,
+    endDate,
+    maxPlays,
     createdBy,
   } = data;
 
@@ -52,6 +58,8 @@ export const createGame = async (data: CreateGameData) => {
     scheduledTime,
     timezone: timezone || "UTC",
     frequencyMinutes,
+    endDate,
+    maxPlays,
     status: "scheduled",
     createdBy,
     isActive: true,

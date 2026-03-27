@@ -23,6 +23,8 @@ export const createGameHandler = async (req: Request, res: Response) => {
       scheduledTime,
       timezone,
       frequencyMinutes,
+      endDate,
+      maxPlays,
     } = req.body;
     const createdBy = (req as any).user.userId; // From auth middleware
 
@@ -80,6 +82,8 @@ export const createGameHandler = async (req: Request, res: Response) => {
       scheduledTime,
       timezone,
       frequencyMinutes,
+      endDate,
+      maxPlays,
       createdBy,
     });
 
@@ -153,7 +157,9 @@ export const updateGameHandler = async (req: Request, res: Response) => {
       scheduledTime,
       timezone,
       status,
-      frequencyMinutes
+      frequencyMinutes,
+      endDate,
+      maxPlays,
     } = req.body;
 
     const game = await updateGame(gameId, {
@@ -164,6 +170,8 @@ export const updateGameHandler = async (req: Request, res: Response) => {
       timezone,
       status,
       frequencyMinutes,
+      endDate,
+      maxPlays,
     });
 
     res.status(200).json({

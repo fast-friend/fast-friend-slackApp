@@ -24,6 +24,8 @@ export interface Game {
   scheduledTime: string; // HH:mm format
   timezone?: string;
   frequencyMinutes?: number;
+  endDate?: string;
+  maxPlays?: number;
   status: "scheduled" | "active" | "completed" | "cancelled";
   createdBy: string;
   isActive: boolean;
@@ -39,6 +41,8 @@ export interface CreateGameRequest {
   scheduledTime: string;
   timezone?: string;
   frequencyMinutes?: number;
+  endDate?: string;
+  maxPlays?: number;
 }
 
 export interface UpdateGameRequest {
@@ -48,5 +52,7 @@ export interface UpdateGameRequest {
   scheduledTime?: string;
   timezone?: string;
   frequencyMinutes?: number;
+  endDate?: string;
+  maxPlays?: number;
   status?: "scheduled" | "active" | "completed" | "cancelled";
 }

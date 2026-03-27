@@ -65,13 +65,15 @@ export const getRefreshTokenExpiry = (): Date => {
   return new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
 };
 
+const isProduction = env.NODE_ENV === "production";
+
 /**
  * Get cookie options for access token
  */
 export const getAccessTokenCookieOptions = () => ({
   httpOnly: true,
-  secure: true, // Required for sameSite: 'none'
-  sameSite: "none" as const, // Allow cross-site cookies (localhost to ngrok)
+  secure: isProduction, // HTTPS only in production; HTTP works in local dev
+  sameSite: isProduction ? ("none" as const) : ("lax" as const), // 'none' requires secure=true
   maxAge: 15 * 60 * 1000, // 15 minutes
   path: "/",
 });
@@ -81,9 +83,19 @@ export const getAccessTokenCookieOptions = () => ({
  */
 export const getRefreshTokenCookieOptions = () => ({
   httpOnly: true,
-  secure: true, // Required for sameSite: 'none'
-  sameSite: "none" as const, // Allow cross-site cookies (localhost to ngrok)
+  secure: isProduction,
+  sameSite: isProduction ? ("none" as const) : ("lax" as const),
   maxAge: REFRESH_TOKEN_EXPIRY_MS,
+  path: "/",
+});
+
+/**
+ * Get cookie clear options (must match the options used when setting the cookie)
+ */
+export const getClearCookieOptions = () => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? ("none" as const) : ("lax" as const),
   path: "/",
 });
 

@@ -56,6 +56,9 @@ export const GamesTab = ({ group }: GamesTabProps) => {
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [frequencyHours, setFrequencyHours] = useState<number | "">("");
   const [frequencyMinutes, setFrequencyMinutes] = useState<number | "">("");
+  const [endCondition, setEndCondition] = useState<"never" | "plays" | "date">("never");
+  const [endPlays, setEndPlays] = useState<number | "">("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const { data: games = [], isLoading } = useGetGamesQuery({
     workspaceId: group.workspaceId,
@@ -76,6 +79,9 @@ export const GamesTab = ({ group }: GamesTabProps) => {
     setScheduledTime("09:00");
     setFrequencyHours("");
     setFrequencyMinutes("");
+    setEndCondition("never");
+    setEndPlays("");
+    setEndDate("");
   };
 
   const handleEditClick = (game: Game) => {
@@ -94,14 +100,26 @@ export const GamesTab = ({ group }: GamesTabProps) => {
       setFrequencyMinutes("");
     }
 
+    if (game.endDate) {
+      setEndCondition("date");
+      setEndDate(game.endDate.split("T")[0]);
+    } else if (game.maxPlays) {
+      setEndCondition("plays");
+      setEndPlays(game.maxPlays);
+    } else {
+      setEndCondition("never");
+    }
+
     setCreateDialogOpen(true);
   };
 
   const handleCreateOrEditGame = async () => {
     if (!gameName.trim() || !selectedTemplateId || selectedDays.length === 0) return;
+    if (endCondition === "date" && !endDate) return;
+    if (endCondition === "plays" && (!endPlays || Number(endPlays) < 1)) return;
 
     try {
-      const payload = {
+      const payload: any = {
         gameName: gameName.trim(),
         gameTemplateId: selectedTemplateId,
         scheduleType,
@@ -110,8 +128,19 @@ export const GamesTab = ({ group }: GamesTabProps) => {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         ...((frequencyHours || frequencyMinutes)
           ? { frequencyMinutes: (Number(frequencyHours || 0) * 60) + Number(frequencyMinutes || 0) }
-          : { frequencyMinutes: null as any }),
+          : { frequencyMinutes: null }),
       };
+
+      if (endCondition === "date") {
+        payload.endDate = new Date(endDate).toISOString();
+        payload.maxPlays = null; // Clear if switching
+      } else if (endCondition === "plays") {
+        payload.maxPlays = Number(endPlays);
+        payload.endDate = null; // Clear if switching
+      } else {
+        payload.endDate = null;
+        payload.maxPlays = null;
+      }
 
       if (editGameId) {
         await updateGame({
@@ -337,6 +366,48 @@ export const GamesTab = ({ group }: GamesTabProps) => {
                 />
               </Box>
             </Box>
+
+            {/* End Condition */}
+            <FormControl fullWidth>
+              <Typography variant="subtitle2" gutterBottom>End Condition (Optional)</Typography>
+              <ToggleButtonGroup
+                value={endCondition}
+                exclusive
+                onChange={(_, value) => {
+                  if (value) setEndCondition(value);
+                }}
+                fullWidth
+                sx={{ mb: 2 }}
+              >
+                <ToggleButton value="never">Never</ToggleButton>
+                <ToggleButton value="plays">After X Plays</ToggleButton>
+                <ToggleButton value="date">On Specific Date</ToggleButton>
+              </ToggleButtonGroup>
+
+              {endCondition === "plays" && (
+                <TextField
+                  label="Number of Plays"
+                  type="number"
+                  fullWidth
+                  value={endPlays}
+                  onChange={(e) => setEndPlays(e.target.value ? Number(e.target.value) : "")}
+                  inputProps={{ min: 1 }}
+                  required
+                />
+              )}
+
+              {endCondition === "date" && (
+                <TextField
+                  label="End Date"
+                  type="date"
+                  fullWidth
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  required
+                />
+              )}
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -349,7 +420,9 @@ export const GamesTab = ({ group }: GamesTabProps) => {
               updating ||
               !gameName.trim() ||
               !selectedTemplateId ||
-              selectedDays.length === 0
+              selectedDays.length === 0 ||
+              (endCondition === "date" && !endDate) ||
+              (endCondition === "plays" && (!endPlays || Number(endPlays) < 1))
             }
           >
             {creating || updating ? "Saving..." : editGameId ? "Save Changes" : "Create Game"}

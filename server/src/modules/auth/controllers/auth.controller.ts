@@ -11,6 +11,7 @@ import {
   getCookieNames,
   getRefreshTokenExpiry,
   generateAccessToken,
+  getClearCookieOptions,
 } from "../utils/jwt.utils";
 import {
   ILoginRequest,
@@ -186,8 +187,8 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Clear cookies
-  res.clearCookie(cookieNames.accessToken, { path: "/" });
-  res.clearCookie(cookieNames.refreshToken, { path: "/" });
+  res.clearCookie(cookieNames.accessToken, getClearCookieOptions());
+  res.clearCookie(cookieNames.refreshToken, getClearCookieOptions());
 
   res.status(200).json({
     success: true,

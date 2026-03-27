@@ -6,6 +6,7 @@ import { verifySlackSignature } from "../../modules/slack-game/middlewares/slack
 import * as slackInteractionController from "../../modules/slack-game/controllers/slackInteraction.controller";
 import workspaceRoutes from "../../modules/slack/routes/workspace.routes";
 import slackEventsRoutes from "../../modules/slack/routes/slackEvents.routes";
+import slackCommandsRoutes from "../../modules/slack-game/routes/slackCommands.routes";
 import onboardingRoutes from "../../modules/onboarding/routes/onboarding.routes";
 import { verifySchedulerSecret } from "../../modules/slack-game/middlewares/schedulerAuth.middleware";
 import * as schedulerController from "../../modules/slack-game/controllers/scheduler.controller";
@@ -33,6 +34,9 @@ router.post(
   verifySlackSignature,
   slackInteractionController.handleInteraction,
 );
+
+// Slack Slash Commands (public, verified by Slack signature)
+router.use("/slack-game/commands", slackCommandsRoutes);
 
 // Public onboarding routes (token-based, no JWT required)
 router.use("/onboard", onboardingRoutes);

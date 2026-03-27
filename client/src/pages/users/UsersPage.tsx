@@ -183,9 +183,18 @@ const UsersPage = () => {
             name={row.real_name || row.name}
           />
           <Box>
-            <Typography variant="body2" fontWeight="600">
-              {value || row.name}
-            </Typography>
+            <Box display="flex" alignItems="center" gap={1}>
+              <Typography variant="body2" fontWeight="600">
+                {value || row.name}
+              </Typography>
+              <Chip
+                label={row.onboardingCompleted ? "Completed" : "Pending"}
+                size="small"
+                color={row.onboardingCompleted ? "success" : "warning"}
+                variant="outlined"
+                sx={{ height: 20, fontSize: "0.65rem", fontWeight: 600 }}
+              />
+            </Box>
             <Typography variant="caption" color="text.secondary">
               @{row.name}
             </Typography>

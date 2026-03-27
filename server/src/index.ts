@@ -54,6 +54,10 @@ app.use(
   "/api/v1/slack-game/interactions",
   express.raw({ type: "application/x-www-form-urlencoded" })
 );
+app.use(
+  "/api/v1/slack-game/commands",
+  express.raw({ type: "application/x-www-form-urlencoded" })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -4,6 +4,7 @@ import { useGetOrganizationsQuery } from "@/features/organization/api/organizati
 import { useGetWorkspacesQuery } from "@/features/slack/api/slackApi";
 import type { OrganizationWithRole } from "@/features/organization/types/organization.types";
 import type { ISlackWorkspace } from "@/features/slack/types/slack.types";
+import { useAppSelector } from "@/app/hooks";
 
 interface WorkspaceContextType {
   currentWorkspace: ISlackWorkspace | null;
@@ -27,11 +28,13 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { workspaceId: urlWorkspaceId } = useParams<{ workspaceId?: string }>();
 
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
   const {
     data: organizations,
     isLoading: isLoadingOrgs,
     error: orgError,
-  } = useGetOrganizationsQuery();
+  } = useGetOrganizationsQuery(undefined, { skip: !isAuthenticated });
 
   const organization = organizations?.[0] || null;
 
@@ -42,7 +45,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
     isUninitialized: isWorkspacesUninitialized,
     error: wsError,
     refetch,
-  } = useGetWorkspacesQuery();
+  } = useGetWorkspacesQuery(undefined, { skip: !isAuthenticated });
 
   const [currentWorkspace, setCurrentWorkspace] =
     useState<ISlackWorkspace | null>(null);

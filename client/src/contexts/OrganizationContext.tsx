@@ -105,7 +105,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
     workspaces,
     organization,
     isLoading: isLoadingOrgs || isLoadingWorkspaces,
-    hasLoaded: !isLoadingOrgs && !isLoadingWorkspaces && !isWorkspacesUninitialized,
+    hasLoaded:
+      !isAuthenticated ||
+      (!isLoadingOrgs && !isLoadingWorkspaces && !isWorkspacesUninitialized),
     error: orgError || wsError,
     switchWorkspace,
     refetchWorkspaces: refetch,

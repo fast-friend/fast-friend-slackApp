@@ -15,6 +15,7 @@ import {
   Settings as SettingsIcon,
   EmojiEvents as GamesIcon,
   Groups as GroupsIcon,
+  Visibility as VisibilityIcon,
   Logout as LogoutIcon,
 } from "@mui/icons-material";
 import Logo from "../../assets/Images/Logo.webp";
@@ -46,7 +47,7 @@ const getSidebarItems = (workspaceId: string): SidebarItem[] => [
     icon: <PeopleIcon />,
   },
   {
-    label: "Teams",
+    label: "Decks",
     path: `/workspaces/${workspaceId}/groups`,
     icon: <GroupsIcon />,
   },
@@ -110,6 +111,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) => {
     setTimeout(() => {
       navigate(path);
     }, 50);
+  };
+
+  const handleShowWalkthrough = () => {
+    if (!workspaceId) return;
+    handleNavigation(`/workspaces/${workspaceId}/dashboard?walkthrough=1`);
   };
 
   const drawerContent = (
@@ -252,21 +258,51 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) => {
               {user?.email}
             </Typography>
           </Box>
-
-          <ListItemButton
-            onClick={handleLogout}
-            disabled={isLogoutLoading}
-            sx={{
-              minWidth: "auto",
-              p: 1,
-              borderRadius: "8px",
-              color: "text.secondary",
-              "&:hover": { color: "error.main", bgcolor: "error.lighter" },
-            }}
-          >
-            <LogoutIcon fontSize="small" />
-          </ListItemButton>
         </Box>
+
+        <ListItemButton
+          onClick={handleShowWalkthrough}
+          sx={{
+            mt: 1.5,
+            mb: 0.5,
+            borderRadius: "8px",
+            color: "text.secondary",
+            gap: 1,
+            "&:hover": {
+              bgcolor: "action.hover",
+              color: "text.primary",
+            },
+          }}
+        >
+          <VisibilityIcon fontSize="small" />
+          <ListItemText
+            primary="Show Walkthrough"
+            primaryTypographyProps={{
+              fontWeight: 500,
+              fontSize: "14px",
+            }}
+          />
+        </ListItemButton>
+
+        <ListItemButton
+          onClick={handleLogout}
+          disabled={isLogoutLoading}
+          sx={{
+            borderRadius: "8px",
+            color: "text.secondary",
+            gap: 1,
+            "&:hover": { color: "error.main", bgcolor: "error.lighter" },
+          }}
+        >
+          <LogoutIcon fontSize="small" />
+          <ListItemText
+            primary={isLogoutLoading ? "Logging out..." : "Logout"}
+            primaryTypographyProps={{
+              fontWeight: 500,
+              fontSize: "14px",
+            }}
+          />
+        </ListItemButton>
       </Box>
     </Box>
   );

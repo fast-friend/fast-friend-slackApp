@@ -166,7 +166,7 @@ export const PeopleTab = ({ group }: PeopleTabProps) => {
     },
     {
       key: "teams",
-      label: "Teams",
+      label: "Decks",
       type: "text",
       render: (_value: any, row: any) => {
         const teams = getMemberTeams(row.id);
@@ -222,7 +222,7 @@ export const PeopleTab = ({ group }: PeopleTabProps) => {
         }}
       >
         <Typography variant="h6" fontWeight="600">
-          Team Members ({filteredMembers.length}
+          Deck Members ({filteredMembers.length}
           {activeFilterCount > 0 ? ` of ${memberDetails.length}` : ""})
         </Typography>
         <FFButton
@@ -304,7 +304,7 @@ export const PeopleTab = ({ group }: PeopleTabProps) => {
         emptyText={
           activeFilterCount > 0
             ? "No members match the selected filters."
-            : "No members in this team yet. Add some members to get started!"
+            : "No members in this deck yet. Add some members to get started!"
         }
         pageSize={10}
       />

@@ -7,6 +7,7 @@ import {
   sendOtp,
   verifyOtp,
   completeOnboarding,
+  completeDashboardWalkthrough,
   forgotPassword,
   resetPassword,
 } from "../controllers/auth.controller";
@@ -26,5 +27,10 @@ router.post("/reset-password", resetPassword);
 router.post("/logout", protect(), logout);
 router.get("/me", protect(), getCurrentUser);
 router.post("/complete-onboarding", protect(), completeOnboarding);
+router.post(
+  "/complete-dashboard-walkthrough",
+  protect(),
+  completeDashboardWalkthrough,
+);
 
 export default router;

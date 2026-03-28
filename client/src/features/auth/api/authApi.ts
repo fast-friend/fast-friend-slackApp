@@ -10,6 +10,7 @@ import type {
   IVerifyOtpRequest,
   IVerifyOtpResponse,
   ICompleteOnboardingResponse,
+  ICompleteDashboardWalkthroughResponse,
   IForgotPasswordRequest,
   IResetPasswordRequest,
   ISimpleSuccessResponse,
@@ -87,6 +88,17 @@ export const authApi = baseApi.injectEndpoints({
       invalidatesTags: ["Auth"],
     }),
 
+    completeDashboardWalkthrough: builder.mutation<
+      ICompleteDashboardWalkthroughResponse,
+      void
+    >({
+      query: () => ({
+        url: "/auth/complete-dashboard-walkthrough",
+        method: "POST",
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+
     // Forgot Password
     forgotPassword: builder.mutation<ISimpleSuccessResponse, IForgotPasswordRequest>({
       query: (data) => ({
@@ -116,6 +128,7 @@ export const {
   useSendOtpMutation,
   useVerifyOtpMutation,
   useCompleteOnboardingMutation,
+  useCompleteDashboardWalkthroughMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
 } = authApi;

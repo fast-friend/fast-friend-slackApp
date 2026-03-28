@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Container, Box, Typography, Alert } from "@mui/material";
 import {
@@ -67,7 +67,7 @@ export const GroupsPage = () => {
   const columns: TableColumn<Group>[] = [
     {
       key: "groupName",
-      label: "Team Name",
+      label: "Deck Name",
       type: "text",
       render: (value: any, row: Group) => (
         <Typography
@@ -163,16 +163,18 @@ export const GroupsPage = () => {
         alignItems="center"
       >
         <Typography variant="h4" fontWeight="bold">
-          Teams
+          Decks
         </Typography>
-        <FFButton
-          variant="primary"
-          onClick={() => setCreateDialogOpen(true)}
-          disabled={!workspaceId}
-        >
-          <AddIcon sx={{ mr: 1 }} />
-          Create Team
-        </FFButton>
+        <Box id="walkthrough-create-team">
+          <FFButton
+            variant="primary"
+            onClick={() => setCreateDialogOpen(true)}
+            disabled={!workspaceId}
+          >
+            <AddIcon sx={{ mr: 1 }} />
+            Create Deck
+          </FFButton>
+        </Box>
       </Box>
 
       {/* No Workspace Alert */}
@@ -197,7 +199,7 @@ export const GroupsPage = () => {
                 "Slack API rate limit exceeded. Please wait a moment and try again."
               );
             }
-            return message || "Failed to load teams. Please try again.";
+            return message || "Failed to load decks. Please try again.";
           })()}
         </Alert>
       )}
@@ -216,7 +218,7 @@ export const GroupsPage = () => {
             }}
           />
           <FFInputField
-            placeholder="Search teams..."
+            placeholder="Search decks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ paddingLeft: "40px" }}
@@ -228,7 +230,7 @@ export const GroupsPage = () => {
       {isLoading ? (
         <Box display="flex" justifyContent="center" alignItems="center" py={8}>
           <Typography variant="body1" color="text.secondary">
-            Loading teams...
+            Loading decks...
           </Typography>
         </Box>
       ) : filteredGroups.length === 0 ? (
@@ -241,19 +243,19 @@ export const GroupsPage = () => {
           }}
         >
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No teams found
+            No decks found
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
             {searchQuery
               ? "Try adjusting your search"
-              : "Create your first team to get started"}
+              : "Create your first deck to get started"}
           </Typography>
         </Box>
       ) : (
         <FFTable
           columns={columns}
           data={filteredGroups}
-          emptyText="No teams found"
+          emptyText="No decks found"
           rowKey="_id"
         />
       )}

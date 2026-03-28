@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar, { DRAWER_WIDTH } from "./Sidebar";
 import Header from "./Header";
 import { fixScrollIfNeeded } from "@/utils/debugScroll";
+import { DashboardWalkthrough } from "@/features/dashboard-walkthrough/components/DashboardWalkthrough";
 
 const DashboardLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -26,6 +27,7 @@ const DashboardLayout: React.FC = () => {
     <Box sx={{ display: "flex" }}>
       <Header onMenuClick={handleDrawerToggle} />
       <Sidebar mobileOpen={mobileOpen} onMobileClose={handleDrawerToggle} />
+      <DashboardWalkthrough />
       <Box
         component="main"
         sx={{

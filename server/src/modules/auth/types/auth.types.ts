@@ -10,6 +10,7 @@ export interface IAuthUser {
   isActive: boolean;
   emailVerified: boolean;
   onboardingCompleted: boolean;
+  dashboardWalkthroughCompleted: boolean;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   createdAt: Date;
@@ -58,6 +59,7 @@ export interface IAuthResponse {
       email: string;
       emailVerified: boolean;
       onboardingCompleted: boolean;
+      dashboardWalkthroughCompleted: boolean;
     };
   };
 }
@@ -72,6 +74,7 @@ export interface ICurrentUserResponse {
       isActive: boolean;
       emailVerified: boolean;
       onboardingCompleted: boolean;
+      dashboardWalkthroughCompleted: boolean;
     };
   };
 }
@@ -101,11 +104,17 @@ export interface IVerifyOtpResponse {
       email: string;
       emailVerified: boolean;
       onboardingCompleted: boolean;
+      dashboardWalkthroughCompleted: boolean;
     };
   };
 }
 
 export interface ICompleteOnboardingResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ICompleteDashboardWalkthroughResponse {
   success: boolean;
   message: string;
 }

@@ -63,6 +63,10 @@ const AuthUserSchema = new Schema<IAuthUserDocument>(
       type: Boolean,
       default: false,
     },
+    dashboardWalkthroughCompleted: {
+      type: Boolean,
+      default: false,
+    },
     passwordResetToken: {
       type: String,
       select: false,

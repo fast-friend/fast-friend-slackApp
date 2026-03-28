@@ -138,7 +138,7 @@ export const StatisticsCards = () => {
       </Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
         <StatCard
-          title="Total Teams"
+          title="Total decks"
           value={stats.totalTeams}
           subtitle="Groups in this workspace"
         />

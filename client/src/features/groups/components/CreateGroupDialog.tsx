@@ -234,7 +234,7 @@ export const CreateGroupDialog = ({
     >
       <DialogTitle>
         <Typography variant="h6" fontWeight="600">
-          Create New Team
+          Create New Deck
         </Typography>
       </DialogTitle>
       <DialogContent>
@@ -242,11 +242,11 @@ export const CreateGroupDialog = ({
           {/* Group Name */}
           <Box>
             <FFInputField
-              label="Team Name"
+              label="Deck Name"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               required
-              placeholder="e.g., Engineering Team"
+              placeholder="e.g., Engineering Deck"
               style={{ width: "100%" }}
             />
           </Box>
@@ -257,7 +257,7 @@ export const CreateGroupDialog = ({
               label="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description for this team"
+              placeholder="Optional description for this deck"
               style={{ width: "100%" }}
             />
           </Box>
@@ -422,7 +422,7 @@ export const CreateGroupDialog = ({
               {/* Members Table with Selection */}
               <Box>
                 <Typography variant="body2" color="text.secondary" mb={1}>
-                  Select Team Members ({selectedUserIds.length} selected)
+                  Select Deck Members ({selectedUserIds.length} selected)
                 </Typography>
                 <FFTable
                   columns={columns}
@@ -459,7 +459,7 @@ export const CreateGroupDialog = ({
           onClick={handleSubmit}
           disabled={!groupName.trim() || creating}
         >
-          {creating ? "Creating..." : "Create Team"}
+          {creating ? "Creating..." : "Create Deck"}
         </FFButton>
       </DialogActions>
     </Dialog>

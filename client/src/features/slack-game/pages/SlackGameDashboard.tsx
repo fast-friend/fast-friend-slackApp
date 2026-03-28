@@ -49,6 +49,7 @@ export const SlackGameDashboard = () => {
 
         {/* Send Onboarding Links */}
         <Button
+          id="walkthrough-send-onboarding"
           variant="contained"
           startIcon={<SendIcon />}
           disabled={isSending}
@@ -69,7 +70,7 @@ export const SlackGameDashboard = () => {
       </Box>
 
       {/* Statistics Cards */}
-      <Box mb={4}>
+      <Box id="walkthrough-dashboard-metrics" mb={4}>
         <StatisticsCards />
       </Box>
 

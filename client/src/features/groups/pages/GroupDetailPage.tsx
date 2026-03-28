@@ -67,7 +67,7 @@ export const GroupDetailPage = () => {
             "&:hover": { color: "primary.main" },
           }}
         >
-          Teams
+          Decks
         </Link>
         <Typography variant="body1" color="text.primary" fontWeight="600">
           {group.groupName}

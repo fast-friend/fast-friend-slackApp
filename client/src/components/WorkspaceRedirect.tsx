@@ -1,6 +1,8 @@
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useWorkspace } from "@/contexts/OrganizationContext";
 import { Box, CircularProgress } from "@mui/material";
+import { useAppSelector } from "@/app/hooks";
+import { useGetCurrentUserQuery } from "@/features/auth";
 
 /**
  * Redirects users to a workspace-scoped route.
@@ -9,8 +11,37 @@ import { Box, CircularProgress } from "@mui/material";
 export const WorkspaceRedirect: React.FC<{ to?: string }> = ({
     to = "dashboard",
 }) => {
+    const location = useLocation();
     const { workspaceId } = useParams<{ workspaceId?: string }>();
+    const { user, isAuthenticated, isLoading: isAuthLoading } = useAppSelector(
+        (state) => state.auth,
+    );
+    const { isLoading: isFetchingAuth, isError: isAuthError } =
+        useGetCurrentUserQuery(undefined, {
+            skip: isAuthenticated && !!user,
+        });
     const { currentWorkspace, workspaces, isLoading, hasLoaded } = useWorkspace();
+
+    if (isAuthLoading || isFetchingAuth) {
+        return (
+            <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                height="100vh"
+            >
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (!isAuthenticated || isAuthError) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    if (user && !user.onboardingCompleted) {
+        return <Navigate to="/onboarding" state={{ from: location }} replace />;
+    }
 
     // Always show loading while fetching workspaces
     if (isLoading || !hasLoaded) {

@@ -239,18 +239,20 @@ export const GamesPage = () => {
                 Games
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Manage scheduled games across all teams
+                Manage scheduled games across all decks
               </Typography>
             </div>
           </Box>
-          <FFButton
-            variant="primary"
-            onClick={() => setCreateDialogOpen(true)}
-            disabled={!workspaceId || groups.length === 0}
-            iconLeft={<AddIcon sx={{ fontSize: 20 }} />}
-          >
-            Create Game
-          </FFButton>
+          <Box id="walkthrough-create-game">
+            <FFButton
+              variant="primary"
+              onClick={() => setCreateDialogOpen(true)}
+              disabled={!workspaceId || groups.length === 0}
+              iconLeft={<AddIcon sx={{ fontSize: 20 }} />}
+            >
+              Create Game
+            </FFButton>
+          </Box>
         </Box>
       </Box>
 
@@ -264,7 +266,7 @@ export const GamesPage = () => {
       {/* No Teams Alert */}
       {workspaceId && groups.length === 0 && !loadingGroups && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          No teams found. Please create teams first before creating games.
+          No decks found. Please create decks first before creating games.
         </Alert>
       )}
 
@@ -297,7 +299,7 @@ export const GamesPage = () => {
             No games scheduled yet
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
-            Create your first game to start engaging with your teams
+            Create your first game to start engaging with your decks
           </Typography>
           <FFButton
             variant="primary"
@@ -413,14 +415,14 @@ export const GamesPage = () => {
             />
 
             <FormControl fullWidth required>
-              <InputLabel>Select Teams</InputLabel>
+              <InputLabel>Select Decks</InputLabel>
               <Select
                 multiple
                 value={selectedGroupIds}
                 onChange={(e) =>
                   setSelectedGroupIds(e.target.value as string[])
                 }
-                input={<OutlinedInput label="Select Teams" />}
+                input={<OutlinedInput label="Select Decks" />}
                 disabled={!!editGameId}
                 renderValue={(selected) =>
                   selected
@@ -438,7 +440,7 @@ export const GamesPage = () => {
                 ))}
               </Select>
               <FormHelperText>
-                Select one or more teams for this game
+                Select one or more decks for this game
               </FormHelperText>
             </FormControl>
 

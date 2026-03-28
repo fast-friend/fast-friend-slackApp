@@ -282,7 +282,7 @@ export const AddPeopleDialog = ({
     >
       <DialogTitle>
         <Typography variant="h6" fontWeight="600">
-          Add People to Team
+          Add People to Deck
         </Typography>
       </DialogTitle>
 
@@ -394,7 +394,7 @@ export const AddPeopleDialog = ({
                 emptyText={
                   usersArray.length === 0
                     ? "No users found in workspace."
-                    : "All workspace users are already members of this team."
+                    : "All workspace users are already members of this deck."
                 }
                 pageSize={10}
               />

@@ -5,6 +5,7 @@ export interface IAuthUser {
   isActive?: boolean;
   emailVerified: boolean;
   onboardingCompleted: boolean;
+  dashboardWalkthroughCompleted: boolean;
 }
 
 // Login Request
@@ -92,6 +93,11 @@ export interface IVerifyOtpResponse {
 
 // Complete Onboarding Response
 export interface ICompleteOnboardingResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ICompleteDashboardWalkthroughResponse {
   success: boolean;
   message: string;
 }

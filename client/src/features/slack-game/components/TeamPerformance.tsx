@@ -93,7 +93,7 @@ export const TeamPerformance = () => {
           : 0;
 
       return {
-        groupName: "All Teams",
+        groupName: "All Decks",
         totalMessages,
         accuracy: avgAccuracy,
         responseRate: avgResponseRate,
@@ -153,7 +153,7 @@ export const TeamPerformance = () => {
           variant="h6"
           sx={{ fontSize: "18px", fontWeight: 600, color: "#101828" }}
         >
-          Team Performance
+          Decks Performance
         </Typography>
 
         <Box display="flex" gap={2} alignItems="center">
@@ -165,7 +165,7 @@ export const TeamPerformance = () => {
               disabled={isLoadingTeams || !teamsData}
               displayEmpty
             >
-              <MenuItem value="all">All Teams</MenuItem>
+              <MenuItem value="all">All Decks</MenuItem>
               {teamsData &&
                 teamsData.map((team) => (
                   <MenuItem key={team.groupId} value={team.groupId}>

@@ -104,6 +104,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
         email: user.email,
         emailVerified: user.emailVerified,
         onboardingCompleted: user.onboardingCompleted,
+        dashboardWalkthroughCompleted: user.dashboardWalkthroughCompleted,
       },
     },
   });
@@ -219,6 +220,7 @@ export const getCurrentUser = asyncHandler(
           isActive: user.isActive,
           emailVerified: user.emailVerified,
           onboardingCompleted: user.onboardingCompleted,
+          dashboardWalkthroughCompleted: user.dashboardWalkthroughCompleted,
         },
       },
     });
@@ -310,6 +312,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
     password: storedOtpData.password,
     emailVerified: true,
     onboardingCompleted: false,
+    dashboardWalkthroughCompleted: false,
   });
 
   // Auto-create organization for the user
@@ -378,6 +381,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
         email: user.email,
         emailVerified: user.emailVerified,
         onboardingCompleted: user.onboardingCompleted,
+        dashboardWalkthroughCompleted: user.dashboardWalkthroughCompleted,
       },
     },
   });
@@ -408,6 +412,34 @@ export const completeOnboarding = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Onboarding completed successfully",
+    });
+  },
+);
+
+/**
+ * @desc    Mark dashboard walkthrough as completed
+ * @route   POST /api/v1/auth/complete-dashboard-walkthrough
+ * @access  Private
+ */
+export const completeDashboardWalkthrough = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new AppError("Not authenticated", 401);
+    }
+
+    const user = await AuthUser.findByIdAndUpdate(
+      req.user.userId,
+      { dashboardWalkthroughCompleted: true },
+      { new: true },
+    );
+
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Dashboard walkthrough completed successfully",
     });
   },
 );

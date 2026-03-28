@@ -103,6 +103,16 @@ const authSlice = createSlice({
         }
       },
     );
+
+    // Handle complete dashboard walkthrough success
+    builder.addMatcher(
+      authApi.endpoints.completeDashboardWalkthrough.matchFulfilled,
+      (state) => {
+        if (state.user) {
+          state.user.dashboardWalkthroughCompleted = true;
+        }
+      },
+    );
   },
 });
 

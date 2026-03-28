@@ -225,7 +225,7 @@ const UsersPage = () => {
     },
     {
       key: "teams",
-      label: "Teams",
+      label: "Decks",
       type: "chips",
       render: (_value: any, row: ISlackUser) => {
         const teams = row.teams || [];
@@ -233,7 +233,7 @@ const UsersPage = () => {
         if (teams.length === 0) {
           return (
             <Typography variant="caption" color="text.secondary">
-              No teams
+              No decks
             </Typography>
           );
         }
@@ -325,7 +325,7 @@ const UsersPage = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
-      <Box mb={4}>
+      <Box id="walkthrough-users-overview" mb={4}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
           <Box display="flex" alignItems="center" gap={1.5}>
             <PeopleIcon sx={{ fontSize: 32, color: "primary.main" }} />
@@ -361,13 +361,15 @@ const UsersPage = () => {
               </Tooltip>
 
               {/* Upload CSV */}
-              <FFButton
-                variant="primary"
-                onClick={() => setCsvModalOpen(true)}
-                iconLeft={<UploadFileIcon sx={{ fontSize: 18 }} />}
-              >
-                Upload CSV
-              </FFButton>
+              <Box>
+                <FFButton
+                  variant="primary"
+                  onClick={() => setCsvModalOpen(true)}
+                  iconLeft={<UploadFileIcon sx={{ fontSize: 18 }} />}
+                >
+                  Upload CSV
+                </FFButton>
+              </Box>
             </Box>
           )}
         </Box>

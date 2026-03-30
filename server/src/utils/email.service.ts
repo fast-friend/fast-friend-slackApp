@@ -2,7 +2,9 @@ import { Resend } from "resend";
 import { env } from "../config/env.config";
 
 if (!env.RESEND_API_KEY || !env.FROM_EMAIL) {
-  console.warn("⚠️  RESEND_API_KEY or FROM_EMAIL not set — email sending will be disabled.");
+  console.warn(
+    "⚠️  RESEND_API_KEY or FROM_EMAIL not set — email sending will be disabled.",
+  );
 }
 
 const resend = new Resend(env.RESEND_API_KEY ?? "");
@@ -174,7 +176,9 @@ const emailShell = (bodyContent: string) => `
  */
 export const sendOtpEmail = async (to: string, otp: string): Promise<void> => {
   if (!env.RESEND_API_KEY || !env.FROM_EMAIL) {
-    throw new Error("Email service not configured. Please set RESEND_API_KEY and FROM_EMAIL in .env");
+    throw new Error(
+      "Email service not configured. Please set RESEND_API_KEY and FROM_EMAIL in .env",
+    );
   }
 
   const { error } = await resend.emails.send({
@@ -222,10 +226,12 @@ export const sendOtpEmail = async (to: string, otp: string): Promise<void> => {
  */
 export const sendPasswordResetEmail = async (
   to: string,
-  resetLink: string
+  resetLink: string,
 ): Promise<void> => {
   if (!env.RESEND_API_KEY || !env.FROM_EMAIL) {
-    throw new Error("Email service not configured. Please set RESEND_API_KEY and FROM_EMAIL in .env");
+    throw new Error(
+      "Email service not configured. Please set RESEND_API_KEY and FROM_EMAIL in .env",
+    );
   }
 
   const { error } = await resend.emails.send({
@@ -262,5 +268,68 @@ export const sendPasswordResetEmail = async (
   if (error) {
     console.error("Resend password reset email error:", error);
     throw new Error(`Failed to send password reset email: ${error.message}`);
+  }
+};
+
+/**
+ * Send pending onboarding reminder email to organization admins
+ */
+export const sendPendingOnboardingReminderEmail = async (
+  to: string,
+  pendingCount: number,
+  totalCount: number,
+  workspaceName: string,
+  workspaceId: string,
+): Promise<void> => {
+  if (!env.RESEND_API_KEY || !env.FROM_EMAIL) {
+    throw new Error(
+      "Email service not configured. Please set RESEND_API_KEY and FROM_EMAIL in .env",
+    );
+  }
+
+  const link = `${env.FRONTEND_URL}/users?workspaceId=${workspaceId}&status=pending`;
+
+  const { error } = await resend.emails.send({
+    from: env.FROM_EMAIL,
+    to,
+    subject: `⏰ ${pendingCount} ${pendingCount === 1 ? "employee hasn't" : "employees haven't"} completed onboarding`,
+    html: emailShell(`
+      <div class="header">
+        <div class="header-logo">📋</div>
+        <h1>Onboarding Reminder</h1>
+        <p>Team engagement starts here</p>
+      </div>
+
+      <div class="body">
+        <p>Hi there,</p>
+
+        <p>This is a friendly reminder that <strong>${pendingCount} out of ${totalCount} ${totalCount === 1 ? "employee" : "employees"}</strong> in
+        <strong>${workspaceName}</strong> ${pendingCount === 1 ? "has" : "have"} not yet completed ${pendingCount === 1 ? "their" : "their"} onboarding profile.</p>
+
+        <div class="notice">
+          📊 Completed onboarding helps team members connect and improves engagement in
+          Fast Friends games.
+        </div>
+
+        <div class="btn-wrapper">
+          <a href="${link}" class="btn">
+            View Pending Users
+          </a>
+        </div>
+
+        <p>You can send reminders directly to pending users from the Users page.</p>
+      </div>
+
+      <hr class="divider" />
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} Fast Friends. All rights reserved.</p>
+        <p>This is an automated message — please do not reply.</p>
+      </div>
+    `),
+  });
+
+  if (error) {
+    console.error("Resend pending onboarding email error:", error);
+    throw new Error(`Failed to send reminder email: ${error.message}`);
   }
 };

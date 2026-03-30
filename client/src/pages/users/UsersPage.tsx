@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import {
   Container,
   Box,
@@ -28,6 +28,8 @@ import type { TableColumn } from "@/components/ui/FFTable";
 import type { ISlackUser } from "@/features/slack/types/slack.types";
 import { CsvUploadModal } from "./CsvUploadModal";
 import Avatar from "@mui/material/Avatar";
+import { FilterDropdown, type FilterValues } from "./FilterDropdown";
+import { FilterChips } from "./FilterChips";
 
 /** Avatar that falls back to MUI initials — no infinite onError loop */
 const UserAvatar = ({ src, name }: { src?: string; name?: string }) => {
@@ -77,10 +79,83 @@ const UserAvatar = ({ src, name }: { src?: string; name?: string }) => {
 const REFRESH_COOLDOWN_SECONDS = 60;
 const REFRESH_LS_KEY = "ff_users_last_refresh";
 
+type AvatarSourceLabel =
+  | "Onboarding Upload"
+  | "Slack Profile Photo"
+  | "Slack Default Avatar";
+
+const getAvatarSourceLabel = (user: ISlackUser): AvatarSourceLabel => {
+  if (user.photoUrl?.trim()) {
+    return "Onboarding Upload";
+  }
+
+  // Slack-native default indicators (most reliable)
+  if (user.is_avatar_default || user.profile?.image_default) {
+    return "Slack Default Avatar";
+  }
+
+  // Slack default avatars often use a "ge..." avatar hash.
+  const avatarHash = user.profile?.avatar_hash?.trim().toLowerCase();
+  if (avatarHash?.startsWith("ge")) {
+    return "Slack Default Avatar";
+  }
+
+  const avatarUrl = user.profile?.image_72?.trim() || "";
+
+  if (!avatarUrl) {
+    return "Slack Default Avatar";
+  }
+
+  // Slack system/default avatars and fallback avatar URLs.
+  if (
+    /^https?:\/\/(?:a|ca)\.slack-edge\.com\//i.test(avatarUrl) ||
+    /^https?:\/\/a\.slack-edge\.com\/\d+\/img\//i.test(avatarUrl) ||
+    /\/avatars\/ava_\d+-\d+\.png/i.test(avatarUrl) ||
+    /^https?:\/\/secure\.gravatar\.com\/avatar\//i.test(avatarUrl) ||
+    /[?&]d=https?%3A%2F%2Fa\.slack-edge\.com%2F/i.test(avatarUrl) ||
+    /[?&]d=https?%3A%2F%2F[^&]*slack-edge\.com%2F[^&]*ava_/i.test(avatarUrl)
+  ) {
+    return "Slack Default Avatar";
+  }
+
+  // Only mark as uploaded profile photo if it matches Slack's uploaded-avatar URL format.
+  if (
+    /^https?:\/\/avatars\.slack-edge\.com\/\d{4}-\d{2}-\d{2}\/[A-Za-z0-9]+_[A-Za-z0-9]+_\d+\.(jpg|jpeg|png|gif|webp)$/i.test(
+      avatarUrl,
+    )
+  ) {
+    return "Slack Profile Photo";
+  }
+
+  return "Slack Default Avatar";
+};
+
 const UsersPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
+
+  // URL params for filters
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Parse filters from URL
+  const statusFilters = useMemo(
+    () => searchParams.get("status")?.split(",").filter(Boolean) || [],
+    [searchParams],
+  );
+  const roleFilters = useMemo(
+    () => searchParams.get("role")?.split(",").filter(Boolean) || [],
+    [searchParams],
+  );
+  const avatarSourceFilters = useMemo(
+    () => searchParams.get("avatarSource")?.split(",").filter(Boolean) || [],
+    [searchParams],
+  );
+  const teamFilters = useMemo(
+    () => searchParams.get("teams")?.split(",").filter(Boolean) || [],
+    [searchParams],
+  );
 
   // Restore cooldown from localStorage on mount
   const [refreshCooldown, setRefreshCooldown] = useState<number>(() => {
@@ -131,17 +206,76 @@ const UsersPage = () => {
 
   const users = usersResponse?.data?.users || [];
 
-  // Filter users by search
+  // Extract unique roles and teams for filter options
+  const availableRoles = useMemo(() => {
+    const roles = users.map((u: ISlackUser) => u.role || "Member");
+    return [...new Set(roles)].sort();
+  }, [users]);
+
+  const availableTeams = useMemo(() => {
+    const teams = users.flatMap((u: ISlackUser) => u.teams || []);
+    return [...new Set(teams)].sort();
+  }, [users]);
+
+  const availableAvatarSources = useMemo(() => {
+    const sources = users.map((u: ISlackUser) => getAvatarSourceLabel(u));
+    return [...new Set(sources)].sort();
+  }, [users]);
+
+  // Filter users by search and filters
   const filteredUsers = useMemo(() => {
-    if (!searchQuery) return users;
-    const query = searchQuery.toLowerCase();
-    return users.filter(
-      (user: ISlackUser) =>
-        user.real_name?.toLowerCase().includes(query) ||
-        user.name?.toLowerCase().includes(query) ||
-        user.profile?.email?.toLowerCase().includes(query),
-    );
-  }, [users, searchQuery]);
+    let result = users;
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (user: ISlackUser) =>
+          user.real_name?.toLowerCase().includes(query) ||
+          user.name?.toLowerCase().includes(query) ||
+          user.profile?.email?.toLowerCase().includes(query),
+      );
+    }
+
+    // Apply status filter (only if not both selected)
+    if (statusFilters.length > 0 && statusFilters.length < 2) {
+      result = result.filter((user: ISlackUser) => {
+        const isPending = !user.onboardingCompleted;
+        const userStatus = isPending ? "pending" : "completed";
+        return statusFilters.includes(userStatus);
+      });
+    }
+
+    // Apply role filter (OR - match any selected role)
+    if (roleFilters.length > 0) {
+      result = result.filter((user: ISlackUser) =>
+        roleFilters.includes(user.role || "Member"),
+      );
+    }
+
+    // Apply avatar source filter (OR - match any selected source)
+    if (avatarSourceFilters.length > 0) {
+      result = result.filter((user: ISlackUser) =>
+        avatarSourceFilters.includes(getAvatarSourceLabel(user)),
+      );
+    }
+
+    // Apply teams filter (OR - match any selected team)
+    if (teamFilters.length > 0) {
+      result = result.filter((user: ISlackUser) =>
+        user.teams?.some((team) => teamFilters.includes(team)),
+      );
+    }
+
+    return result;
+  }, [
+    users,
+    searchQuery,
+    statusFilters,
+    roleFilters,
+    avatarSourceFilters,
+    teamFilters,
+  ]);
 
   const handleRefresh = useCallback(async () => {
     if (!workspaceId || refreshCooldown > 0 || isRefreshing) return;
@@ -168,6 +302,59 @@ const UsersPage = () => {
       });
     }, 1000);
   }, [workspaceId, refreshCooldown, isRefreshing, refreshWorkspaceUsers]);
+
+  // Handle filter changes
+  const handleApplyFilters = useCallback(
+    (filters: FilterValues) => {
+      const params = new URLSearchParams();
+      if (filters.status.length) params.set("status", filters.status.join(","));
+      if (filters.avatarSource.length) {
+        params.set("avatarSource", filters.avatarSource.join(","));
+      }
+      if (filters.role.length) params.set("role", filters.role.join(","));
+      if (filters.teams.length) params.set("teams", filters.teams.join(","));
+      navigate(`?${params.toString()}`, { replace: true });
+    },
+    [navigate],
+  );
+
+  const handleRemoveFilter = useCallback(
+    (category: keyof FilterValues, value: string) => {
+      const params = new URLSearchParams(searchParams);
+
+      const currentValues = params.get(category)?.split(",") || [];
+      const newValues = currentValues.filter((v) => v !== value);
+
+      if (newValues.length > 0) {
+        params.set(category, newValues.join(","));
+      } else {
+        params.delete(category);
+      }
+
+      navigate(`?${params.toString()}`, { replace: true });
+    },
+    [searchParams, navigate],
+  );
+
+  // Active filter state for components
+  const activeFilters: FilterValues = useMemo(
+    () => ({
+      status: statusFilters,
+      avatarSource: avatarSourceFilters,
+      role: roleFilters,
+      teams: teamFilters,
+    }),
+    [statusFilters, avatarSourceFilters, roleFilters, teamFilters],
+  );
+
+  const activeFilterCount = useMemo(
+    () =>
+      statusFilters.length +
+      avatarSourceFilters.length +
+      roleFilters.length +
+      teamFilters.length,
+    [statusFilters, avatarSourceFilters, roleFilters, teamFilters],
+  );
 
   // Define table columns
   const columns: TableColumn<ISlackUser>[] = [
@@ -201,6 +388,30 @@ const UsersPage = () => {
           </Box>
         </Box>
       ),
+    },
+    {
+      key: "avatarSource",
+      label: "Avatar Source",
+      type: "text",
+      render: (_value: any, row: ISlackUser) => {
+        const source = getAvatarSourceLabel(row);
+        const color =
+          source === "Onboarding Upload"
+            ? "success"
+            : source === "Slack Profile Photo"
+              ? "primary"
+              : "default";
+
+        return (
+          <Chip
+            label={source}
+            size="small"
+            color={color}
+            variant="outlined"
+            sx={{ fontWeight: 600 }}
+          />
+        );
+      },
     },
     {
       key: "role",
@@ -326,7 +537,12 @@ const UsersPage = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
       <Box id="walkthrough-users-overview" mb={4}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          mb={1}
+        >
           <Box display="flex" alignItems="center" gap={1.5}>
             <PeopleIcon sx={{ fontSize: 32, color: "primary.main" }} />
             <Typography variant="h4" fontWeight="700">
@@ -378,14 +594,30 @@ const UsersPage = () => {
         </Typography>
       </Box>
 
-      {/* Search */}
-      <Box mb={3} display="flex" alignItems="center" gap={1}>
-        <SearchIcon sx={{ color: "text.secondary" }} />
-        <FFInputField
-          placeholder="Search users by name, username, or email..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ width: "100%" }}
+      {/* Search and Filters */}
+      <Box mb={3}>
+        <Box display="flex" alignItems="center" gap={1} mb={2}>
+          <SearchIcon sx={{ color: "text.secondary" }} />
+          <FFInputField
+            placeholder="Search users by name, username, or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <FilterDropdown
+            availableRoles={availableRoles}
+            availableTeams={availableTeams}
+            availableAvatarSources={availableAvatarSources}
+            activeFilters={activeFilters}
+            onApplyFilters={handleApplyFilters}
+            activeCount={activeFilterCount}
+          />
+        </Box>
+
+        {/* Active Filter Chips */}
+        <FilterChips
+          activeFilters={activeFilters}
+          onRemoveFilter={handleRemoveFilter}
         />
       </Box>
 

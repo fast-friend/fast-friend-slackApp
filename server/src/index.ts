@@ -9,6 +9,7 @@ import v1Routes from "./routes/v1/index";
 import errorHandlerMiddleware from "./middlewares/errorHandler";
 import notFoundMiddleware from "./middlewares/notFound";
 import cookieParser from "cookie-parser";
+import { initPendingOnboardingReminderJob } from "./modules/onboarding/jobs/pendingOnboardingReminder.job";
 
 dotenv.config();
 
@@ -46,17 +47,14 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 
 // Fully intercept and preserve RAW body for all Slack routes (Events and Interactions)
-app.use(
-  "/api/v1/slack/events",
-  express.raw({ type: "application/json" })
-);
+app.use("/api/v1/slack/events", express.raw({ type: "application/json" }));
 app.use(
   "/api/v1/slack-game/interactions",
-  express.raw({ type: "application/x-www-form-urlencoded" })
+  express.raw({ type: "application/x-www-form-urlencoded" }),
 );
 app.use(
   "/api/v1/slack-game/commands",
-  express.raw({ type: "application/x-www-form-urlencoded" })
+  express.raw({ type: "application/x-www-form-urlencoded" }),
 );
 
 app.use(express.json());
@@ -76,6 +74,9 @@ const server = createServer(app);
 const startServer = async () => {
   try {
     await connectDB();
+
+    // Initialize cron jobs
+    initPendingOnboardingReminderJob("0 9 * * *");
 
     server.listen(PORT, () => {
       console.log(`Server live in ${env.NODE_ENV} mode on port ${PORT}`);

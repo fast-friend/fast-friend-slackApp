@@ -15,12 +15,15 @@ export interface ISlackUser {
   name: string;
   deleted: boolean;
   real_name: string;
+  is_avatar_default?: boolean;
   profile: {
     email?: string;
     display_name: string;
     real_name: string;
     image_72: string;
-    title?: string;       // Slack job title field
+    image_default?: boolean;
+    avatar_hash?: string;
+    title?: string; // Slack job title field
   };
   is_bot: boolean;
   is_app_user: boolean;

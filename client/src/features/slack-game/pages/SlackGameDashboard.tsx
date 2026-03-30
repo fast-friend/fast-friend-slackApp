@@ -1,6 +1,14 @@
-import { useState } from "react";
-import { Container, Box, Typography, Button, Snackbar, Alert } from "@mui/material";
+import { useEffect, useState } from "react";
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import { Send as SendIcon } from "@mui/icons-material";
+import { useLocation } from "react-router-dom";
 import { StatisticsCards } from "../components/StatisticsCards";
 import { Leaderboard } from "../components/Leaderboard";
 import { TeamPerformance } from "../components/TeamPerformance";
@@ -8,14 +16,34 @@ import { useSendOnboardingLinksMutation } from "../api/slackGameApi";
 import { useWorkspace } from "@/contexts/OrganizationContext";
 
 export const SlackGameDashboard = () => {
+  const location = useLocation();
   const { currentWorkspace } = useWorkspace();
-  const [sendOnboardingLinks, { isLoading: isSending }] = useSendOnboardingLinksMutation();
+  const [sendOnboardingLinks, { isLoading: isSending }] =
+    useSendOnboardingLinksMutation();
 
-  const [snack, setSnack] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
+  const [snack, setSnack] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
     open: false,
     message: "",
     severity: "success",
   });
+
+  useEffect(() => {
+    if (!location.hash) return;
+
+    const targetId = location.hash.replace("#", "");
+    const raf = window.requestAnimationFrame(() => {
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+
+    return () => window.cancelAnimationFrame(raf);
+  }, [location.hash]);
 
   const handleSendOnboarding = async () => {
     if (!currentWorkspace?._id) return;
@@ -34,7 +62,14 @@ export const SlackGameDashboard = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4, bgcolor: "#FFFFFF" }}>
       {/* Header */}
-      <Box mb={4} display="flex" alignItems="flex-start" justifyContent="space-between" flexWrap="wrap" gap={2}>
+      <Box
+        mb={4}
+        display="flex"
+        alignItems="flex-start"
+        justifyContent="space-between"
+        flexWrap="wrap"
+        gap={2}
+      >
         <Box>
           <Typography
             variant="h4"
@@ -42,7 +77,10 @@ export const SlackGameDashboard = () => {
           >
             Admin Dashboard
           </Typography>
-          <Typography variant="body1" sx={{ fontSize: "14px", color: "#667085" }}>
+          <Typography
+            variant="body1"
+            sx={{ fontSize: "14px", color: "#667085" }}
+          >
             Here is your current balance and active investment plans.
           </Typography>
         </Box>
@@ -80,7 +118,7 @@ export const SlackGameDashboard = () => {
       </Box>
 
       {/* Team Performance */}
-      <Box mb={4}>
+      <Box id="deck-performance" mb={4}>
         <TeamPerformance />
       </Box>
 

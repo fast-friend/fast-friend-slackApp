@@ -8,7 +8,8 @@ import { sendPendingOnboardingReminderEmail } from "../../../utils/email.service
 
 /**
  * Run the pending onboarding reminder job
- * Sends emails to organization admins when users haven't completed onboarding after 24 hours
+ * Sends emails to organization admins when users haven't completed onboarding
+ * between 24 hours and 3 days after token creation.
  */
 export const runPendingOnboardingReminder = async () => {
   console.log(
@@ -16,11 +17,12 @@ export const runPendingOnboardingReminder = async () => {
   );
 
   try {
-    // 1. Find tokens created more than 24 hours ago that are not used and not expired
+    // 1. Find tokens created between 24 hours and 3 days ago that are not used and not expired
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
 
     const pendingTokens = await OnboardingToken.find({
-      createdAt: { $lt: twentyFourHoursAgo },
+      createdAt: { $lt: twentyFourHoursAgo, $gte: threeDaysAgo },
       used: false,
       expiresAt: { $gt: new Date() },
     }).lean();

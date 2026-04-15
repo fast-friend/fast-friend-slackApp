@@ -12,14 +12,13 @@ import { useLocation } from "react-router-dom";
 import { StatisticsCards } from "../components/StatisticsCards";
 import { Leaderboard } from "../components/Leaderboard";
 import { TeamPerformance } from "../components/TeamPerformance";
-import { useSendOnboardingLinksMutation } from "../api/slackGameApi";
 import { useWorkspace } from "@/contexts/OrganizationContext";
+import SendOnboardingDialog from "../components/SendOnboardingDialog";
 
 export const SlackGameDashboard = () => {
   const location = useLocation();
   const { currentWorkspace } = useWorkspace();
-  const [sendOnboardingLinks, { isLoading: isSending }] =
-    useSendOnboardingLinksMutation();
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
 
   const [snack, setSnack] = useState<{
     open: boolean;
@@ -45,18 +44,12 @@ export const SlackGameDashboard = () => {
     return () => window.cancelAnimationFrame(raf);
   }, [location.hash]);
 
-  const handleSendOnboarding = async () => {
-    if (!currentWorkspace?._id) return;
-    try {
-      const result = await sendOnboardingLinks(currentWorkspace._id).unwrap();
-      setSnack({ open: true, message: result.message, severity: "success" });
-    } catch (err: any) {
-      setSnack({
-        open: true,
-        message: err?.data?.message || "Failed to send onboarding links.",
-        severity: "error",
-      });
-    }
+  const handleSendSuccess = (message: string) => {
+    setSnack({ open: true, message, severity: "success" });
+  };
+
+  const handleSendError = (message: string) => {
+    setSnack({ open: true, message, severity: "error" });
   };
 
   return (
@@ -90,8 +83,8 @@ export const SlackGameDashboard = () => {
           id="walkthrough-send-onboarding"
           variant="contained"
           startIcon={<SendIcon />}
-          disabled={isSending}
-          onClick={handleSendOnboarding}
+          disabled={!currentWorkspace?._id}
+          onClick={() => setSendDialogOpen(true)}
           sx={{
             bgcolor: "#E57B2C",
             borderRadius: "10px",
@@ -103,9 +96,17 @@ export const SlackGameDashboard = () => {
             whiteSpace: "nowrap",
           }}
         >
-          {isSending ? "Sending…" : "Send Onboarding Links"}
+          Send Onboarding Links
         </Button>
       </Box>
+
+      <SendOnboardingDialog
+        open={sendDialogOpen}
+        onClose={() => setSendDialogOpen(false)}
+        workspaceId={currentWorkspace?._id}
+        onSuccess={handleSendSuccess}
+        onError={handleSendError}
+      />
 
       {/* Statistics Cards */}
       <Box id="walkthrough-dashboard-metrics" mb={4}>

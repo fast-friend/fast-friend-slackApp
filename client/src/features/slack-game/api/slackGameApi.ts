@@ -94,11 +94,12 @@ export const slackGameApi = baseApi.injectEndpoints({
     // Send onboarding DM links to all non-completed users
     sendOnboardingLinks: builder.mutation<
       { message: string; data: { sentCount: number } },
-      string  // workspaceId
+      { workspaceId: string; userIds?: string[] }
     >({
-      query: (workspaceId) => ({
+      query: ({ workspaceId, userIds }) => ({
         url: `/workspaces/${workspaceId}/send-onboarding`,
         method: "POST",
+        body: userIds ? { userIds } : undefined,
       }),
     }),
   }),

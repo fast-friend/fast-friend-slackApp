@@ -139,20 +139,34 @@ export const uploadPhotoToCloudinary = async (
 
 /**
  * Send onboarding DM links to all non-completed Slack users in a workspace.
+ * If userIds are provided, only those users are targeted.
  * Returns the count of DMs sent.
  */
-export const sendOnboardingDMs = async (workspaceId: string): Promise<number> => {
+export const sendOnboardingDMs = async (
+    workspaceId: string,
+    userIds?: string[]
+): Promise<number> => {
     const workspace = await SlackWorkspace.findById(workspaceId);
     if (!workspace) {
         throw new AppError("Workspace not found.", 404);
     }
 
-    // Fetch all active, non-completed users
-    const users = await SlackUser.find({
+    const selectedUserIds = Array.isArray(userIds)
+        ? [...new Set(userIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))]
+        : [];
+
+    // Fetch all active, non-completed users, optionally limited to a selected subset
+    const userQuery: Record<string, any> = {
         workspaceId,
         isActive: true,
         onboardingCompleted: { $ne: true },
-    }).lean();
+    };
+
+    if (selectedUserIds.length > 0) {
+        userQuery.userId = { $in: selectedUserIds };
+    }
+
+    const users = await SlackUser.find(userQuery).lean();
 
     if (users.length === 0) {
         return 0;

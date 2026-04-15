@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import multer from "multer";
 import asyncHandler from "../../../utils/asyncHandler";
+import AppError from "../../../utils/appError";
 import * as onboardingService from "../services/onboarding.service";
 import SlackUser from "../../groups/models/SlackUser.model";
 
@@ -109,8 +110,18 @@ export const submitOnboarding = asyncHandler(async (req: Request, res: Response)
  */
 export const sendOnboardingLinks = asyncHandler(async (req: Request, res: Response) => {
     const { workspaceId } = req.params;
+    const { userIds } = req.body as { userIds?: unknown };
 
-    const sentCount = await onboardingService.sendOnboardingDMs(workspaceId);
+    if (userIds !== undefined) {
+        if (!Array.isArray(userIds) || userIds.length === 0) {
+            throw new AppError("Select at least one team member.", 400);
+        }
+    }
+
+    const sentCount = await onboardingService.sendOnboardingDMs(
+        workspaceId,
+        Array.isArray(userIds) ? (userIds as string[]) : undefined
+    );
 
     res.status(200).json({
         success: true,

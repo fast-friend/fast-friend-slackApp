@@ -15,6 +15,19 @@ dotenv.config();
 
 const app = express();
 
+const normalizeOrigin = (value: string) => value.replace(/\/$/, "");
+
+const allowedOrigins = new Set(
+  [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    env.FRONTEND_URL,
+    ...(env.CORS_ORIGINS?.split(",").map((origin) => origin.trim()) ?? []),
+  ]
+    .filter(Boolean)
+    .map(normalizeOrigin),
+);
+
 if (env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
@@ -26,13 +39,12 @@ const corsOptions = {
   ) => {
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      env.FRONTEND_URL, // Ensure this doesn't have a trailing slash in .env
-    ];
+    const normalizedOrigin = normalizeOrigin(origin);
 
-    if (allowedOrigins.includes(origin) || origin.includes("ngrok")) {
+    if (
+      allowedOrigins.has(normalizedOrigin) ||
+      normalizedOrigin.includes("ngrok")
+    ) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));

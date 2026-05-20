@@ -40,6 +40,12 @@ const envSchema = z.object({
   // Optional in dev — server starts without them; email calls will fail if not set
   RESEND_API_KEY: z.string().optional(),
   FROM_EMAIL: z.string().optional(),
+
+  // Stripe
+  STRIPE_SECRET_KEY: z.string().min(1, "STRIPE_SECRET_KEY is required"),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1, "STRIPE_WEBHOOK_SECRET is required"),
+  STRIPE_PRICE_PRO_MONTHLY: z.string().min(1, "STRIPE_PRICE_PRO_MONTHLY is required"),
+  STRIPE_PRICE_PRO_YEARLY: z.string().min(1, "STRIPE_PRICE_PRO_YEARLY is required"),
 });
 
 /**

@@ -19,6 +19,7 @@ import {
   ValidateWorkspace,
 } from "@/components/WorkspaceRedirect";
 import { OnboardingFormPage } from "@/features/onboarding-form/pages/OnboardingFormPage";
+import BillingPage from "./billing/BillingPage";
 
 const OrganisationMain = () => {
   return (
@@ -89,6 +90,7 @@ const OrganisationMain = () => {
         <Route path="groups" element={<GroupsPage />} />
         <Route path="groups/:groupId" element={<GroupDetailPage />} />
         <Route path="games" element={<GamesPage />} />
+        <Route path="billing" element={<BillingPage />} />
 
         {/* Redirect /workspaces/:workspaceId to /workspaces/:workspaceId/dashboard */}
         <Route index element={<Navigate to="dashboard" replace />} />

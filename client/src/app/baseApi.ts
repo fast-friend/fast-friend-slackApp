@@ -57,6 +57,7 @@ export const baseApi = createApi({
     "SlackUsers",
     "Games",
     "GameTemplates",
+    "Billing",
   ],
   endpoints: () => ({}),
 });

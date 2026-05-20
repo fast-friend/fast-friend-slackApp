@@ -17,6 +17,7 @@ import {
   Groups as GroupsIcon,
   Visibility as VisibilityIcon,
   Logout as LogoutIcon,
+  CreditCard as CreditCardIcon,
 } from "@mui/icons-material";
 import Logo from "../../assets/Images/Logo.webp";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -60,6 +61,11 @@ const getSidebarItems = (workspaceId: string): SidebarItem[] => [
     label: "Settings",
     path: `/workspaces/${workspaceId}/settings`,
     icon: <SettingsIcon />,
+  },
+  {
+    label: "Billing",
+    path: `/workspaces/${workspaceId}/billing`,
+    icon: <CreditCardIcon />,
   },
 ];
 

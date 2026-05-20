@@ -1,4 +1,5 @@
 import { Document, Types } from "mongoose";
+import { PlanType, SubscriptionStatus } from "../../../modules/billing/types/billing.types";
 
 export enum OrganizationRole {
   OWNER = "OWNER",
@@ -15,6 +16,12 @@ export interface IOrganization {
   isActive: boolean;
   departments: string[];
   roles: string[];
+  // Billing
+  plan: PlanType;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionStatus?: SubscriptionStatus | null;
+  currentPeriodEnd?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

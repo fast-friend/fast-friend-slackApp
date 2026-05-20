@@ -46,6 +46,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(cookieParser());
 
+// Raw body for Stripe webhooks (must be before JSON middleware)
+app.use("/api/v1/billing/webhook", express.raw({ type: "application/json" }));
+
 // Fully intercept and preserve RAW body for all Slack routes (Events and Interactions)
 app.use("/api/v1/slack/events", express.raw({ type: "application/json" }));
 app.use(

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authRoutes } from "../../modules/auth";
 import { slackRoutes } from "../../modules/slack";
 import { organizationRoutes } from "../../modules/organization";
+import { billingRoutes } from "../../modules/billing";
 import { verifySlackSignature } from "../../modules/slack-game/middlewares/slackVerification.middleware";
 import * as slackInteractionController from "../../modules/slack-game/controllers/slackInteraction.controller";
 import workspaceRoutes from "../../modules/slack/routes/workspace.routes";
@@ -15,6 +16,9 @@ const router = Router();
 
 // Auth routes
 router.use("/auth", authRoutes);
+
+// Billing routes
+router.use("/billing", billingRoutes);
 
 // Organization routes (basic org management only)
 router.use("/organizations", organizationRoutes);

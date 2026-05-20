@@ -11,6 +11,7 @@ const envSchema = z.object({
 
   MONGO_URI: z.string().min(1, "MONGO_URI is required"),
   FRONTEND_URL: z.string().url("FRONTEND_URL must be a valid URL"),
+  CORS_ORIGINS: z.string().optional(),
 
   JWT_ACCESS_SECRET: z
     .string()
@@ -64,7 +65,7 @@ function validateEnv() {
       });
 
       console.error(
-        "\n⚠️  Please check your .env file and ensure all required variables are set correctly.\n"
+        "\n⚠️  Please check your .env file and ensure all required variables are set correctly.\n",
       );
       process.exit(1);
     }

@@ -5,6 +5,10 @@ import { ITokenPayload, IAuthTokens } from "../types/auth.types";
 const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = "7d";
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const frontendUrl = new URL(env.FRONTEND_URL);
+const isHttpsFrontend = frontendUrl.protocol === "https:";
+const cookieSameSite = isHttpsFrontend ? ("none" as const) : ("lax" as const);
+const cookieSecure = isHttpsFrontend;
 
 /**
  * Generate access token
@@ -65,15 +69,13 @@ export const getRefreshTokenExpiry = (): Date => {
   return new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
 };
 
-const isProduction = env.NODE_ENV === "production";
-
 /**
  * Get cookie options for access token
  */
 export const getAccessTokenCookieOptions = () => ({
   httpOnly: true,
-  secure: isProduction, // HTTPS only in production; HTTP works in local dev
-  sameSite: isProduction ? ("none" as const) : ("lax" as const), // 'none' requires secure=true
+  secure: cookieSecure,
+  sameSite: cookieSameSite,
   maxAge: 15 * 60 * 1000, // 15 minutes
   path: "/",
 });
@@ -83,8 +85,8 @@ export const getAccessTokenCookieOptions = () => ({
  */
 export const getRefreshTokenCookieOptions = () => ({
   httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? ("none" as const) : ("lax" as const),
+  secure: cookieSecure,
+  sameSite: cookieSameSite,
   maxAge: REFRESH_TOKEN_EXPIRY_MS,
   path: "/",
 });
@@ -94,8 +96,8 @@ export const getRefreshTokenCookieOptions = () => ({
  */
 export const getClearCookieOptions = () => ({
   httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? ("none" as const) : ("lax" as const),
+  secure: cookieSecure,
+  sameSite: cookieSameSite,
   path: "/",
 });
 
